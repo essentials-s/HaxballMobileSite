@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>Haxball Mobile Controls</title>
+  <style>
+    /* Базовая стилизация страницы */
+    body {
+      margin: 0;
+      padding: 0;
+      background: #1a2125;
+      font-family: sans-serif;
+      overflow: hidden;
+      position: relative;
+      height: 100vh;
+    }
+    /* Панель для джойстика */
+    #joystick-panel {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 150px;
+      height: 150px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      touch-action: none;
+    }
+    /* Сам джойстик */
+    #joystick {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+    /* "Статик" (ручка) джойстика */
+    #stick {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      touch-action: none;
+    }
+    /* Кнопка удара */
+    #kick-button {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 80px;
+      height: 80px;
+      background: #c13535;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+  <!-- Панель с джойстиком -->
+  <div id="joystick-panel">
+    <div id="joystick">
+      <div id="stick"></div>
+    </div>
+  </div>
+  
+  <!-- Кнопка удара -->
+  <button id="kick-button">Kick</button>
+  
+  <script>
+    // Инициализация элементов
+    const joystickPanel = document.getElementById('joystick-panel');
+    const stick = document.getElementById('stick');
+    const kickButton = document.getElementById('kick-button');
+    let dragging = false;
+    const panelRect = joystickPanel.getBoundingClientRect();
+    const centerX = joystickPanel.offsetWidth / 2;
+    const centerY = joystickPanel.offsetHeight / 2;
+
+    // Функция для сброса положения ручки джойстика в центр панели
+    function resetStick() {
+      stick.style.left = centerX + 'px';
+      stick.style.top = centerY + 'px';
+    }
+
+    // Обработка движения джойстика
+    function handleMove(e) {
+      if (!dragging) return;
+      let clientX, clientY;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      let rect = joystickPanel.getBoundingClientRect();
+      let x = clientX - rect.left;
+      let y = clientY - rect.top;
+      // Расчёт смещения относительно центра
+      let dx = x - centerX;
+      let dy = y - centerY;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+      const maxDistance = joystickPanel.offsetWidth / 2;
+      if (distance > maxDistance) {
+        dx = dx / distance * maxDistance;
+        dy = dy / distance * maxDistance;
+      }
+      stick.style.left = (centerX + dx) + 'px';
+      stick.style.top = (centerY + dy) + 'px';
+      
+      // Расчёт угла и силы
+      let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      let strength = Math.min(1, distance / maxDistance);
+      console.log('Joystick angle:', angle.toFixed(2), 'strength:', strength.toFixed(2));
+      // Здесь можно эмулировать нажатия клавиш или вызывать игровые функции
+    }
+    
+    // События для сенсорного ввода
+    joystickPanel.addEventListener('touchstart', (e) => {
+      dragging = true;
+    });
+    joystickPanel.addEventListener('touchmove', (e) => {
+      handleMove(e);
+      e.preventDefault();
+    });
+    joystickPanel.addEventListener('touchend', (e) => {
+      dragging = false;
+      resetStick();
+    });
+
+    // События для мыши (для отладки в браузере на ПК)
+    joystickPanel.addEventListener('mousedown', (e) => {
+      dragging = true;
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (dragging) {
+        handleMove(e);
+      }
+    });
+    window.addEventListener('mouseup', (e) => {
+      if (dragging) {
+        dragging = false;
+        resetStick();
+      }
+    });
+
+    // Обработчик для кнопки удара
+    kickButton.addEventListener('click', () => {
+      console.log('Kick button pressed!');
+      // Здесь можно эмулировать нажатие кнопки удара (например, отправку события или вызов функции игры)
+    });
+
+    // Инициализируем положение джойстика
+    resetStick();
+  </script>
+</body>
+</html>
