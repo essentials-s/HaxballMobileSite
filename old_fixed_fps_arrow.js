@@ -781,13 +781,11 @@ function setupBallDirectionRenderer() {
     const canvas = document.createElement('canvas');
     canvas.id = 'ball-arrow';
     canvas.style.cssText = `
-        position: absolute;
-        pointer-events: none;
+        position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 5000;
+        pointer-events: none;
+        z-index: 9999;
     `;
     document.body.appendChild(canvas);
     const ctx = canvas.getContext('2d');
@@ -801,6 +799,9 @@ function setupBallDirectionRenderer() {
 
     function drawArrow(x1, y1, x2, y2) {
         const angle = Math.atan2(y2 - y1, x2 - x1);
+        const length = Math.hypot(x2 - x1, y2 - y1);
+        if (length < 10) return; // если слишком близко, не рисовать
+
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
@@ -808,42 +809,45 @@ function setupBallDirectionRenderer() {
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Arrowhead
+        // стрелка
         ctx.beginPath();
         ctx.moveTo(x2, y2);
         ctx.lineTo(x2 - 10 * Math.cos(angle - Math.PI / 6), y2 - 10 * Math.sin(angle - Math.PI / 6));
         ctx.lineTo(x2 - 10 * Math.cos(angle + Math.PI / 6), y2 - 10 * Math.sin(angle + Math.PI / 6));
-        ctx.lineTo(x2, y2);
+        ctx.closePath();
         ctx.fillStyle = '#ffde59';
         ctx.fill();
     }
 
     function render() {
         const frame = document.querySelector('.gameframe');
-        if (!frame || !frame.contentWindow || !frame.contentWindow.document) return requestAnimationFrame(render);
-        const doc = frame.contentWindow.document;
-        const player = doc.querySelector('[data-hook="me"]');
+        if (!frame) return requestAnimationFrame(render);
+
+        const doc = frame.contentWindow?.document;
+        if (!doc) return requestAnimationFrame(render);
+
+        const me = doc.querySelector('[data-hook="me"]');
         const ball = doc.querySelector('[data-hook="ball"]');
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        if (player && ball) {
-            const pRect = player.getBoundingClientRect();
-            const bRect = ball.getBoundingClientRect();
+        if (me && ball) {
+            const playerBox = me.getBoundingClientRect();
+            const ballBox = ball.getBoundingClientRect();
 
-            const px = pRect.left + pRect.width / 2;
-            const py = pRect.top + pRect.height / 2;
-
-            const bx = bRect.left + bRect.width / 2;
-            const by = bRect.top + bRect.height / 2;
+            const px = playerBox.left + playerBox.width / 2;
+            const py = playerBox.top + playerBox.height / 2;
+            const bx = ballBox.left + ballBox.width / 2;
+            const by = ballBox.top + ballBox.height / 2;
 
             drawArrow(px, py, bx, by);
         }
+
         requestAnimationFrame(render);
     }
+
     render();
 }
-
 // === INIT ADDITIONS ===
 window.addEventListener('load', () => {
     createFPSCounter();
