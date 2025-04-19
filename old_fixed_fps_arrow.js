@@ -751,7 +751,7 @@ function createFPSCounter() {
         z-index: 9999;
         pointer-events: auto;
     `;
-    fps.textContent = 'FPS: --';
+    fps.textContent = 'FPS: -- | Erdaulet Team';
     document.body.appendChild(fps);
 
     let show = true;
@@ -767,7 +767,7 @@ function createFPSCounter() {
         const now = performance.now();
         frames++;
         if (now - last >= 1000) {
-            if (show) fps.textContent = 'FPS: ' + frames;
+            if (show) fps.textContent = 'FPS: ' + frames + ' | Erdaulet Team';
             frames = 0;
             last = now;
         }
