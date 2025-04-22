@@ -853,3 +853,35 @@ window.addEventListener('load', () => {
     createFPSCounter();
     setupBallDirectionRenderer();
 });
+
+
+///////////////////////////////////////// BIND-CHAT /////////////////////////////////////
+const bindMessages = [
+  { label: "Пас!", text: "пас!" },
+  { label: "В воротах", text: "я в воротах!" },
+  { label: "Изи", text: "изи катка" }
+];
+
+// Стили кнопок
+const baseStyle = `
+  position: fixed;
+  bottom: 20px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-size: 14px;
+  z-index: 9999;
+  user-select: none;
+`;
+
+// Отрисовываем кнопки
+bindMessages.forEach((bind, index) => {
+  const btn = document.createElement("div");
+  btn.innerText = bind.label;
+  btn.style = baseStyle + `right: ${20 + index * 110}px;`;
+  btn.addEventListener("click", () => {
+    window.HBInit && room.sendChat && room.sendChat(bind.text);
+  });
+  document.body.appendChild(btn);
+});
