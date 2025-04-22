@@ -892,3 +892,136 @@ const waitForRoom = setInterval(() => {
     });
   }
 }, 500);
+const chatJoystick = document.createElement("div");
+const chatJoystickPanel = document.createElement("div");
+const chatStick = document.createElement("div");
+const chatJoystickLabel = document.createElement("p");
+
+let chatSelectedMessage = ["", 0];
+
+chatJoystick.setAttribute("id", "chat-joystick");
+chatJoystickPanel.setAttribute("id", "chat-joystick-panel");
+chatStick.setAttribute("id", "chat-stick");
+chatStick.innerHTML = '<svg id="chat-svg" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path d="M5.8 12.2V6H2C.9 6 0 6.9 0 8v6c0 1.1.9 2 2 2h1v3l3-3h5c1.1 0 2-.9 2-2v-1.82a.943.943 0 0 1-.2.021h-7zM18 1H9c-1.1 0-2 .9-2 2v8h7l3 3v-3h1c1.1 0 2-.899 2-2V3c0-1.1-.9-2-2-2"/></svg>';
+
+chatJoystickLabel.setAttribute("id", "chat-joystick-label");
+chatJoystickLabel.innerText = "GG!"
+
+document.body.appendChild(chatJoystickPanel);
+chatJoystickPanel.appendChild(chatJoystick);
+chatJoystick.appendChild(chatJoystickLabel);
+chatJoystick.appendChild(chatStick);
+
+let chatJoystickStylesheet = document.createElement("style");
+chatJoystickStylesheet.innerHTML = `
+#chat-joystick, #chat-stick {
+    color:#dedede55;
+    font-weight:bolder;
+    font-size:1.5rem;
+    border-radius: 50%;
+}
+#chat-joystick {
+    width: 120px;
+    height: 120px;
+    opacity: 1;
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin:30px
+}
+#chat-joystick-panel {
+    width: min-content;
+    height: min-content;
+    position: absolute;
+    right: 0;
+    top: 35px;
+    display: block;
+    z-index: 3;
+}
+#chat-stick {
+    width: calc(100px * .45);
+    height: calc(100px * .45);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color:#244967;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#chat-svg { fill: #FFFFFF; }
+#chat-joystick-label {
+    color: white;
+    position: absolute;
+    text-align: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8em;
+    font-family: 'Inter';
+    font-weight: normal;
+    text-shadow: 1px 0px 4px rgba(0,0,0,0.66);
+}`;
+document.head.appendChild(chatJoystickStylesheet);
+
+let isDraggingChatJoystick = false;
+
+chatJoystickPanel.addEventListener('mousedown', startDrag);
+chatJoystickPanel.addEventListener('touchstart', startDrag);
+chatJoystickPanel.addEventListener('mouseup', endDrag);
+chatJoystickPanel.addEventListener('touchend', endDrag);
+chatJoystickPanel.addEventListener('mousemove', moveStick);
+chatJoystickPanel.addEventListener('touchmove', moveStick);
+
+function startDrag(e) {
+    isDraggingChatJoystick = true;
+    e.preventDefault();
+}
+function endDrag() {
+    isDraggingChatJoystick = false;
+    if (chatSelectedMessage[1] > 30 && chatSelectedMessage[0]) {
+        prefabMessage(chatSelectedMessage[0]); // или room.sendChat(chatSelectedMessage[0])
+    }
+    resetChatStick();
+}
+function moveStick(e) {
+    if (!isDraggingChatJoystick) return;
+    const rect = chatJoystick.getBoundingClientRect();
+    let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    let y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    const cx = chatJoystick.offsetWidth / 2;
+    const cy = chatJoystick.offsetHeight / 2;
+    let dx = x - cx;
+    let dy = y - cy;
+    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    let dist = Math.min(chatJoystick.offsetWidth / 2, Math.sqrt(dx*dx + dy*dy));
+
+    chatStick.style.transition = 'none';
+    chatStick.style.transform = `translate(${dx}px, ${dy}px)`;
+
+    const offset = 25;
+    if (dist > 30) {
+        if (angle > -offset && angle < offset) {
+            chatSelectedMessage[0] = "изи";
+        } else if (angle > 90 - offset && angle < 90 + offset) {
+            chatSelectedMessage[0] = "опайте";
+        } else if (angle > -90 - offset && angle < -90 + offset) {
+            chatSelectedMessage[0] = "пас дай";
+        } else if (angle < -180 + offset || angle > 180 - offset) {
+            chatSelectedMessage[0] = "уф";
+        }
+        chatSelectedMessage[1] = dist;
+    } else {
+        chatSelectedMessage[0] = "";
+        chatSelectedMessage[1] = 0;
+    }
+    chatJoystickLabel.innerText = chatSelectedMessage[0];
+    chatJoystickLabel.style.opacity = dist / 50;
+}
+function resetChatStick() {
+    chatStick.style.transition = 'transform 0.4s ease-out';
+    chatStick.style.transform = 'translate(-50%, -50%)';
+    chatSelectedMessage = ["", 0];
+    chatJoystickLabel.style.opacity = '0';
+}
