@@ -856,32 +856,39 @@ window.addEventListener('load', () => {
 
 
 ///////////////////////////////////////// BIND-CHAT /////////////////////////////////////
-const bindMessages = [
-  { label: "Пас!", text: "пас!" },
-  { label: "В воротах", text: "я в воротах!" },
-  { label: "Изи", text: "изи катка" }
-];
+// Ждём, пока загрузится HaxBall
+const waitForRoom = setInterval(() => {
+  if (typeof window.room !== "undefined" && room.sendChat) {
+    clearInterval(waitForRoom);
 
-// Стили кнопок
-const baseStyle = `
-  position: fixed;
-  bottom: 20px;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  padding: 10px 15px;
-  border-radius: 10px;
-  font-size: 14px;
-  z-index: 9999;
-  user-select: none;
-`;
+    const bindMessages = [
+      { label: "Пас", text: "пас!" },
+      { label: "Я в воротах", text: "я в воротах!" },
+      { label: "Изи", text: "изи катка" }
+    ];
 
-// Отрисовываем кнопки
-bindMessages.forEach((bind, index) => {
-  const btn = document.createElement("div");
-  btn.innerText = bind.label;
-  btn.style = baseStyle + `right: ${20 + index * 110}px;`;
-  btn.addEventListener("click", () => {
-    window.HBInit && room.sendChat && room.sendChat(bind.text);
-  });
-  document.body.appendChild(btn);
-});
+    const baseStyle = `
+      position: fixed;
+      bottom: 20px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: sans-serif;
+      z-index: 9999;
+      user-select: none;
+      cursor: pointer;
+    `;
+
+    bindMessages.forEach((bind, index) => {
+      const btn = document.createElement("div");
+      btn.innerText = bind.label;
+      btn.style = baseStyle + `right: ${20 + index * 110}px;`;
+      btn.addEventListener("click", () => {
+        room.sendChat(bind.text);
+      });
+      document.body.appendChild(btn);
+    });
+  }
+}, 500);
