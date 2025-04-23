@@ -1025,8 +1025,8 @@ function resetChatStick() {
     chatSelectedMessage = ["", 0];
     chatJoystickLabel.style.opacity = '0';
 }
-// === ИНДИКАТОР ПИНГА ===
-function createPingCounter() {
+// === ПИНГ ЧЕРЕЗ WEBSOCKET ===
+function setupPingCounter() {
     const pingDisplay = document.createElement('div');
     pingDisplay.id = 'ping-counter';
     pingDisplay.style.cssText = `
@@ -1049,29 +1049,43 @@ function createPingCounter() {
     pingDisplay.onclick = () => {
         show = !show;
         pingDisplay.style.opacity = show ? '0.25' : '0';
+    };
+
+    let lastPingTime = null;
+
+    function sendPing() {
+        if (window.room && window.room._socket) {
+            lastPingTime = performance.now();
+            window.room._socket.send("ping");
+        }
     }
 
-    function updatePing() {
-        const start = performance.now();
-
-        // Отправка запроса на сервер (или тестовую конечную точку)
-        fetch(window.location.href, { method: 'HEAD', cache: 'no-cache' })
-            .then(() => {
-                const end = performance.now();
-                const ping = Math.round(end - start);
-                if (show) pingDisplay.textContent = 'Ping: ' + ping + ' ms';
-            })
-            .catch(() => {
-                if (show) pingDisplay.textContent = 'Ping: Error';
-            });
-
-        setTimeout(updatePing, 1000); // Обновление пинга каждую секунду
+    function handlePong() {
+        if (lastPingTime) {
+            const ping = Math.round(performance.now() - lastPingTime);
+            if (show) pingDisplay.textContent = `Ping: ${ping} ms`;
+        }
     }
 
-    updatePing();
+    // Перехват сообщений WebSocket
+    const originalWebSocket = window.WebSocket;
+    window.WebSocket = function (...args) {
+        const ws = new originalWebSocket(...args);
+
+        ws.addEventListener('message', (event) => {
+            if (event.data === 'pong') {
+                handlePong();
+            }
+        });
+
+        return ws;
+    };
+
+    // Запуск измерения пинга
+    setInterval(sendPing, 1000); // Отправлять пинг каждую секунду
 }
 
-// Вызов функции при загрузке страницы
+// Запуск функции после загрузки страницы
 window.addEventListener('load', () => {
-    createPingCounter();
+    setupPingCounter();
 });
