@@ -1025,3 +1025,53 @@ function resetChatStick() {
     chatSelectedMessage = ["", 0];
     chatJoystickLabel.style.opacity = '0';
 }
+// === ИНДИКАТОР ПИНГА ===
+function createPingCounter() {
+    const pingDisplay = document.createElement('div');
+    pingDisplay.id = 'ping-counter';
+    pingDisplay.style.cssText = `
+        position: fixed;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-size: 0.9em;
+        font-family: monospace;
+        opacity: 0.25;
+        text-shadow: 1px 1px 1px black;
+        z-index: 9999;
+        pointer-events: auto;
+    `;
+    pingDisplay.textContent = 'Ping: --';
+    document.body.appendChild(pingDisplay);
+
+    let show = true;
+    pingDisplay.onclick = () => {
+        show = !show;
+        pingDisplay.style.opacity = show ? '0.25' : '0';
+    }
+
+    function updatePing() {
+        const start = performance.now();
+
+        // Отправка запроса на сервер (или тестовую конечную точку)
+        fetch(window.location.href, { method: 'HEAD', cache: 'no-cache' })
+            .then(() => {
+                const end = performance.now();
+                const ping = Math.round(end - start);
+                if (show) pingDisplay.textContent = 'Ping: ' + ping + ' ms';
+            })
+            .catch(() => {
+                if (show) pingDisplay.textContent = 'Ping: Error';
+            });
+
+        setTimeout(updatePing, 1000); // Обновление пинга каждую секунду
+    }
+
+    updatePing();
+}
+
+// Вызов функции при загрузке страницы
+window.addEventListener('load', () => {
+    createPingCounter();
+});
