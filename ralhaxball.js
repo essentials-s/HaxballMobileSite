@@ -1026,66 +1026,36 @@ function resetChatStick() {
     chatJoystickLabel.style.opacity = '0';
 }
 // === ПИНГ ЧЕРЕЗ WEBSOCKET ===
-function setupPingCounter() {
-    const pingDisplay = document.createElement('div');
-    pingDisplay.id = 'ping-counter';
-    pingDisplay.style.cssText = `
-        position: fixed;
-        bottom: 25px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: white;
-        font-size: 0.9em;
-        font-family: monospace;
-        opacity: 0.25;
-        text-shadow: 1px 1px 1px black;
-        z-index: 9999;
-        pointer-events: auto;
-    `;
-    pingDisplay.textContent = 'Ping: --';
-    document.body.appendChild(pingDisplay);
-
-    let show = true;
-    pingDisplay.onclick = () => {
-        show = !show;
-        pingDisplay.style.opacity = show ? '0.25' : '0';
-    };
-
-    let lastPingTime = null;
-
-    function sendPing() {
-        if (window.room && window.room._socket) {
-            lastPingTime = performance.now();
-            window.room._socket.send("ping");
-        }
-    }
-
-    function handlePong() {
-        if (lastPingTime) {
-            const ping = Math.round(performance.now() - lastPingTime);
-            if (show) pingDisplay.textContent = `Ping: ${ping} ms`;
-        }
-    }
-
-    // Перехват сообщений WebSocket
-    const originalWebSocket = window.WebSocket;
-    window.WebSocket = function (...args) {
-        const ws = new originalWebSocket(...args);
-
-        ws.addEventListener('message', (event) => {
-            if (event.data === 'pong') {
-                handlePong();
-            }
-        });
-
-        return ws;
-    };
-
-    // Запуск измерения пинга
-    setInterval(sendPing, 1000); // Отправлять пинг каждую секунду
+function init() {
+    setupPingDisplay();
 }
 
-// Запуск функции после загрузки страницы
-window.addEventListener('load', () => {
-    setupPingCounter();
-});
+
+// === 5/10: REAL PING DISPLAY ===
+function setupPingDisplay() {
+    const pingDiv = document.createElement('div');
+    pingDiv.style.cssText = `
+        position: fixed;
+        top: 5px;
+        right: 10px;
+        color: white;
+        font-family: monospace;
+        font-size: 0.9rem;
+        text-shadow: 1px 1px 2px black;
+        z-index: 9999;
+    `;
+    document.body.appendChild(pingDiv);
+
+    setInterval(() => {
+        const frame = document.querySelector('.gameframe');
+        const scoreboard = frame?.contentWindow?.document?.querySelector('.scoreboard');
+        if (scoreboard) {
+            const pingText = scoreboard.innerText.match(/\b\d{1,4}ms\b/);
+            if (pingText) {
+                pingDiv.textContent = 'Ping: ' + pingText[0];
+                return;
+            }
+        }
+        pingDiv.textContent = 'Ping: --';
+    }, 1000);
+}
