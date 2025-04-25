@@ -1,28 +1,3 @@
-// Добавляем стили для кнопок фона
-document.head.appendChild(Object.assign(document.createElement("style"), { 
-  innerHTML: `
-    .bg-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 15px 0;
-      justify-content: center;
-    }
-    .bg-btn {
-      padding: 8px 12px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      min-width: 60px;
-      color: white;
-      text-shadow: 1px 1px 1px #000;
-    }
-    body {
-      transition: background 0.3s ease;
-    }
-  `
-}));
 
 // Модифицируем функцию updateUI()
 function updateUI() {
@@ -84,24 +59,7 @@ document.querySelector('.gameframe').contentWindow.document.head.appendChild(Obj
     left: 50%; 
     bottom: 120px; 
     transform: translateX(-50%); 
-    width: 70%; 
-    max-width: 400px; 
-    font-size: 0.9rem; 
-    pointer-events: auto; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-  }
-  .chatbox-view-contents { flex-direction: column-reverse; background: 0 0; pointer-events: none; }
-  .chatbox-view-contents > .input { margin-bottom: 10px; pointer-events: auto; }
-  .chatbox-view-contents > .log { flex-direction: column; pointer-events: auto; overflow-y: auto; scrollbar-width: none; user-select: text; }
-  .settings-view .section.selected { display: flex; align-items: center; }
-  .log-contents { display: flex; flex-direction: column-reverse; text-shadow: 1px 1px 5px #000000cc; }
-  .fade-out { opacity: 0; transition: opacity 10s ease-out; }
-  thead tr { display: table-row !important; }
-  svg { width: 1em; }
-  .input-options { position: absolute; width: 100%; height: 100%; z-index: 20; background-color: #1a2125; }
-`}));
+
 
 ///////////////////////////////////////// CONSTANTS /////////////////////////////////////////
 let gameFrame = document.querySelector('.gameframe').contentWindow;
