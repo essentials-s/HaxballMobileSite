@@ -1,5 +1,97 @@
-document.head.appendChild(Object.assign(document.createElement("style"), { innerHTML: "#thumb,body{touch-action:none}body{user-select:none;height:100%}@media only screen and (max-device-width:480px){body{touch-action:manipulation}}.header,.rightbar{display:none!important}.rounded{border:none;border-radius:50%}[view|=hidden]{display:none}[view|=visible]{display:flex;justify-content:center;align-items:center}[float]{position:absolute}svg{fill:#ecf0f3cc;width:30px;height:auto}#kick svg{width:50%}" }));
-document.querySelector('.gameframe').contentWindow.document.head.appendChild(Object.assign(document.createElement("style"), { innerHTML: ".room-view,.roomlist-view{height:100%;margin-top:0}.game-view>.top-section,.room-view{margin-top:0}.settings-view{width:100%;max-height:none}.game-view>[data-hook=popups]{background-color:#1a212585}.disconnected-view .dialog,.disconnected-view .room-view>.container{width:450px}.create-room-view>.dialog,.room-view.create-room-view>.container{max-width:450px;width:100%}body{background:#1a2125}[data-hook=leave-btn]{background:#c13535!important}.file-btn,[data-hook=rec-btn]{display:none!important}h1{text-align:center}.room-view>.container>.header-btns{bottom:0;right:10px;top:auto}.room-view>.container{max-width:none;max-height:max-content}.room-view{position:absolute;width:100%}.roomlist-view>.dialog{max-width:max-content;max-height:max-content}.game-state-view .bar>.scoreboard{display:flex;align-items:center;margin-right:50px}.chatbox-view{position:absolute;left:15px;bottom:90px;width:90%;pointer-events:auto;font-size:1rem;display:flex;flex-direction:column;align-items:flex-start;}.chatbox-view-contents{flex-direction:column-reverse;background:0 0;pointer-events:none}.chatbox-view-contents>.input{margin-bottom:10px;pointer-events:auto}.chatbox-view-contents>.log{flex-direction:column;pointer-events:auto;overflow-y:auto;scrollbar-width:none; user-select:text;}.settings-view .section.selected{display:flex;align-items:center}.log-contents{display:flex;flex-direction:column-reverse;text-shadow:1px 1px 5px #000000cc}.fade-out{opacity:0;transition:opacity 10s ease-out}thead tr{display:table-row!important}svg{width: 1em}.input-options{position: absolute;width: 100%;height: 100%;z-index: 20;background-color: #1a2125;}" }));
+// Добавляем стили для кнопок фона
+document.head.appendChild(Object.assign(document.createElement("style"), { 
+  innerHTML: `
+    .bg-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 15px 0;
+      justify-content: center;
+    }
+    .bg-btn {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 60px;
+      color: white;
+      text-shadow: 1px 1px 1px #000;
+    }
+    body {
+      transition: background 0.3s ease;
+    }
+  `
+}));
+
+// Модифицируем функцию updateUI()
+function updateUI() {
+    if (body.querySelector('.choose-nickname-view')) {
+        // Chose nickname
+        showControls(false);
+        copyright(true);
+        
+        // Добавляем кнопки смены фона только если их еще нет
+        if (!body.querySelector('.bg-buttons')) {
+            const nicknameView = body.querySelector('.choose-nickname-view');
+            const bgButtons = document.createElement('div');
+            bgButtons.className = 'bg-buttons';
+            
+            // Массив цветов фона
+            const bgColors = [
+                {name: 'Черный', value: '#000000'},
+                {name: 'Серый', value: '#1a2125'}, 
+                {name: 'Зеленый', value: '#5d9e5b'},
+                {name: 'Ярко-зеленый', value: '#00ff00'},
+                {name: 'Желтый', value: '#ffff00', textColor: '#000'},
+                {name: 'Синий', value: '#0000ff'},
+                {name: 'Красный', value: '#ff0000'},
+            ];
+            
+            // Создаем кнопки для каждого цвета
+            bgColors.forEach(color => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-btn';
+                btn.textContent = color.name;
+                btn.style.backgroundColor = color.value;
+                if (color.textColor) {
+                    btn.style.color = color.textColor;
+                    btn.style.textShadow = 'none';
+                }
+                btn.onclick = () => {
+                    const gameBody = document.querySelector('.gameframe').contentWindow.document.body;
+                    gameBody.style.background = color.value;
+                    // Сохраняем выбор в localStorage
+                    localStorage.setItem('bgColor', color.value);
+                };
+                bgButtons.appendChild(btn);
+            });
+            
+            // Вставляем кнопки после поля ввода ника
+            nicknameView.querySelector('.label-input').after(bgButtons);
+            
+            // Восстанавливаем сохраненный цвет фона
+            const savedBgColor = localStorage.getItem('bgColor');
+            if (savedBgColor) {
+                document.querySelector('.gameframe').contentWindow.document.body.style.background = savedBgColor;
+            }
+        }
+    }
+    // Остальной код updateUI() остается без изменений
+    if (body.querySelector('.roomlist-view')) {
+        // Roomlist
+        copyright(false);
+        firstTime = true;
+        if (!getByDataHook('search')) createSearchbar();
+        if (!getByDataHook('url-room')) createURLButton();
+        if (!getByDataHook('fil-cou')) createCountryButton();
+        if (!getByDataHook('aboutbtn')) createAboutButton();
+        if (getByDataHook('count')) getByDataHook('count').remove();
+        showControls(false);
+    } 
+    // ... остальные условия updateUI()
+}
+document.querySelector('.gameframe').contentWindow.document.head.appendChild(Object.assign(document.createElement("style"), { innerHTML: ".room-view,.roomlist-view{height:100%;margin-top:0}.game-view>.top-section,.room-view{margin-top:0}.settings-view{width:100%;max-height:none}.game-view>[data-hook=popups]disconnected-view .dialog,.disconnected-view .room-view>.container{width:450px}.create-room-view>.dialog,.room-view.create-room-view>.container{max-width:450px;width:100%}[data-hook=leave-btn]{background:#c13535!important}.file-btn,[data-hook=rec-btn]{display:none!important}h1{text-align:center}.room-view>.container>.header-btns{bottom:0;right:10px;top:auto}.room-view>.container{max-width:none;max-height:max-content}.room-view{position:absolute;width:100%}.roomlist-view>.dialog{max-width:max-content;max-height:max-content}.game-state-view .bar>.scoreboard{display:flex;align-items:center;margin-right:50px}.chatbox-view{position:absolute;left:15px;bottom:90px;width:90%;pointer-events:auto;font-size:1rem;display:flex;flex-direction:column;align-items:flex-start;}.chatbox-view-contents{flex-direction:column-reverse;background:0 0;pointer-events:none}.chatbox-view-contents>.input{margin-bottom:10px;pointer-events:auto}.chatbox-view-contents>.log{flex-direction:column;pointer-events:auto;overflow-y:auto;scrollbar-width:none; user-select:text;}.settings-view .section.selected{display:flex;align-items:center}.log-contents{display:flex;flex-direction:column-reverse;text-shadow:1px 1px 5px #000000cc}.fade-out{opacity:0;transition:opacity 10s ease-out}thead tr{display:table-row!important}svg{width: 1em}.input-options{position: absolute;width: 100%;height: 100%;z-index: 20" }));
 
 if(!localStorage.getItem('low_latency_canvas') || localStorage.getItem('low_latency_canvas') == 1){
     localStorage.setItem('low_latency_canvas',0)
