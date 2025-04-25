@@ -224,9 +224,8 @@ function updateUI() {
         console.log("PAGE_LOADED")
     // === ИНФО-ПАНЕЛЬ ===
     const infoPanel = document.createElement("div");
-    infoPanel.style.cssText = "position: absolute; top: 10px; right: 10px; color: white; font-size: 14px; font-family: sans-serif; z-index: 999; text-align: right;";
+    infoPanel.style.cssText = "position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); color: white; font-size: 14px; font-family: sans-serif; z-index: 999; text-align: center; background-color: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 6px;";
     document.body.appendChild(infoPanel);
-
     let lastFrameTime = performance.now();
     let frameCount = 0;
     let fps = 0;
