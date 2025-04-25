@@ -430,6 +430,22 @@ function createCountryButton() {
 function setupGameUI() {
     const chat = body.querySelector('.chatbox-view');
 
+    // Обновленные стили для чата
+    chat.style.cssText = `
+        position: absolute;
+        left: 50%;
+        bottom: 120px;
+        transform: translateX(-50%);
+        width: 70%;
+        max-width: 400px;
+        font-size: 0.9rem;
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    `;
+
+    // Остальной код функции остается без изменений
     if (!getByDataHook('chat-toggle')) {
         const button = document.createElement("button");
         button.setAttribute("data-hook", "chat-toggle");
@@ -482,16 +498,21 @@ function updatedChat() {
             }
         }
 
-        
         const lastChild = log.firstChild.lastChild;
         lastChild.style.opacity = 1;
 
-        // Добавим кнопку копирования
+        // Удаляем старую кнопку копирования, если она есть
+        const oldCopyBtn = lastChild.querySelector("button");
+        if (oldCopyBtn) oldCopyBtn.remove();
+
+        // Добавляем новую кнопку копирования
         const copyBtn = document.createElement("button");
         copyBtn.innerText = "Копировать";
         copyBtn.style.cssText = "margin-left:8px;padding:2px 6px;font-size:12px;cursor:pointer;";
         copyBtn.onclick = () => {
-            navigator.clipboard.writeText(lastChild.textContent);
+            // Копируем только текст сообщения без слова "Копировать"
+            const messageText = lastChild.textContent.replace(/Копировать$/, '').trim();
+            navigator.clipboard.writeText(messageText);
         };
         lastChild.appendChild(copyBtn);
 
