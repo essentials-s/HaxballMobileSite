@@ -63,6 +63,7 @@ const inputOptionsHandler = document.createElement("div");
 
 const config = { childList: true, subtree: true };
 
+}
 ///////////////////////////////////////// VARIABLES /////////////////////////////////////////
 
 let firstTime = true;
@@ -71,6 +72,7 @@ let lastMessage;
 let joystick;
 let kickButton;
 
+}
 ///////////////////////////////////////// MAIN /////////////////////////////////////////
 
 var checkLoaderInterval = setInterval(checkLoader, 1000);
