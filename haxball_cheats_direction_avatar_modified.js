@@ -402,41 +402,34 @@ function setupGameUI() {
             requestAnimationFrame(frameCounter);
         }
         frameCounter();
-    // Отображение направления мяча
-    setInterval(() => {
-        if (!cheats.autoDirection) return;
-        const canvas = document.querySelector("canvas");
-        if (!canvas || !canvas.getContext) return;
+  // Отображение направления мяча
+const directionElement = document.createElement("div");
+directionElement.id = "ball-direction";
+directionElement.style.cssText = "position:fixed;bottom:50px;left:50%;transform:translateX(-50%);color:white;font-size:16px;z-index:999;background:#000a;padding:4px 8px;border-radius:8px;";
+document.body.appendChild(directionElement);
 
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+setInterval(() => {
+    if (!cheats.autoDirection) {
+        directionElement.style.display = "none";
+        return;
+    }
+    
+    directionElement.style.display = "block";
+    let ball = null;
+    try {
+        ball = gameFrame.room?.gameState?.DISK?.find(d => d.id === 0);
+    } catch {}
 
-        let ball = null;
-        try {
-            ball = gameFrame.room?.gameState?.DISK?.find(d => d.id === 0);
-        } catch {}
-
-        if (!ball || !ball.pos || !ball.speed) return;
-
-        const scale = window.devicePixelRatio || 1;
-        const [x, y] = ball.pos;
-        const [vx, vy] = ball.speed;
-
-        const endX = x + vx * 10;
-        const endY = y + vy * 10;
-
-        ctx.save();
-        ctx.strokeStyle = "lime";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(x * scale, y * scale);
-        ctx.lineTo(endX * scale, endY * scale);
-        ctx.stroke();
-        ctx.restore();
-    }, 100);
-
+    if (!ball || !ball.pos || !ball.speed) {
+        directionElement.textContent = "Мяч не найден";
+        return;
     }
 
+    const [vx, vy] = ball.speed;
+    const angle = Math.atan2(vy, vx) * (180 / Math.PI);
+    directionElement.textContent = `Направление: ${angle.toFixed(1)}°`;
+}, 100);
+        
     // Плавающий шар
     if (!document.getElementById("cheat-button")) {
         const ball = document.createElement("div");
@@ -885,16 +878,21 @@ setInterval(() => {
 }, 100);
 
 
-// Смена аватарки по алфавиту каждые 5 секунд
-const alphabetAvatars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+// Автосмена аватарки
 let avatarIndex = 0;
-
-setInterval(() => {
+const avatarChangeInterval = setInterval(() => {
     if (!cheats.autoAvatar) return;
-    const avatarInput = body.querySelector('[data-hook="avatar-input"]');
-    if (avatarInput) {
-        avatarInput.value = alphabetAvatars[avatarIndex];
-        avatarInput.dispatchEvent(new Event("input", { bubbles: true }));
-        avatarIndex = (avatarIndex + 1) % alphabetAvatars.length;
+    
+    try {
+        const avatarInput = gameFrame.document.querySelector('input[data-hook="avatar-input"]');
+        if (avatarInput) {
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            avatarInput.value = letters[avatarIndex % letters.length];
+            const event = new Event('input', { bubbles: true });
+            avatarInput.dispatchEvent(event);
+            avatarIndex++;
+        }
+    } catch (e) {
+        console.log("Ошибка при смене аватарки:", e);
     }
 }, 5000);
