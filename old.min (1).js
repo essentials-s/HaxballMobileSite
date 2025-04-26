@@ -730,3 +730,319 @@ function getDirection(x, y) {
   const directions = ["d", "sd", "s", "sa", "a", "aw", "w", "wd"];
   return directions[sector];
 }
+
+// ============== ДОБАВЛЕННЫЕ ФУНКЦИИ ============== 
+
+// 1. FPS и PING метр
+function addFpsPingMeter() {
+    const meter = document.createElement('div');
+    meter.id = 'hax-fps-ping';
+    meter.style = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 10px;
+        font-family: Arial;
+        font-size: 12px;
+        z-index: 9999;
+    `;
+    document.body.appendChild(meter);
+
+    function updateFps() {
+        frameCount++;
+        const now = performance.now();
+        if (now >= lastFpsUpdate + 1000) {
+            fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
+            frameCount = 0;
+            lastFpsUpdate = now;
+        }
+        requestAnimationFrame(updateFps);
+    }
+    updateFps();
+
+    setInterval(() => {
+        if (room) {
+            lastPing = room.getPing();
+            meter.textContent = `FPS: ${fps} | PING: ${fakePing > 0 ? fakePing : lastPing}ms`;
+        }
+    }, 100);
+}
+
+// 2. Улучшенный чат
+function enhanceChat() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .chatbox-view {
+            bottom: 10px !important;
+            top: auto !important;
+            left: 50% !important;
+            transform: translateX(-50%);
+            width: 40% !important;
+            max-height: 120px !important;
+        }
+        .chatbox-view-contents .log {
+            max-height: 80px !important;
+            overflow-y: auto !important;
+        }
+        .chat-message {
+            position: relative;
+            padding-right: 20px;
+        }
+        .copy-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            background: #6a0dad;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            padding: 0 3px;
+        }
+    `;
+    document.head.appendChild(style);
+
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.classList?.contains('chat-message')) {
+                    const btn = document.createElement('button');
+                    btn.className = 'copy-btn';
+                    btn.textContent = 'Copy';
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(node.textContent.replace('Copy', '').trim());
+                    };
+                    node.appendChild(btn);
+                }
+            });
+        });
+    });
+
+    observer.observe(document.querySelector('.log-contents'), { childList: true });
+}
+
+// 3. Мод-меню
+function createModMenu() {
+    const menu = document.createElement('div');
+    menu.id = 'hax-mod-menu';
+    menu.style = `
+        position: fixed;
+        top: 50px;
+        left: 10px;
+        background: #333;
+        color: white;
+        border-radius: 10px;
+        padding: 10px;
+        z-index: 9998;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        width: 200px;
+    `;
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.textContent = 'MOD MENU';
+    toggleBtn.style = `
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: #6a0dad;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 9999;
+    `;
+    toggleBtn.onclick = () => {
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    };
+    document.body.appendChild(toggleBtn);
+
+    // Автоудар
+    const autoKick = document.createElement('div');
+    autoKick.innerHTML = `
+        <label>
+            <input type="checkbox" id="auto-kick"> Автоудар
+        </label>
+    `;
+    menu.appendChild(autoKick);
+
+    // Фейк пинг
+    const fakePingControl = document.createElement('div');
+    fakePingControl.innerHTML = `
+        <div>Фейк пинг: <input type="number" id="fake-ping-value" min="0" max="999" value="0" style="width:50px">ms</div>
+    `;
+    menu.appendChild(fakePingControl);
+
+    // Мини-радар
+    const radar = document.createElement('div');
+    radar.innerHTML = `
+        <label>
+            <input type="checkbox" id="show-radar"> Мини-радар
+        </label>
+        <canvas id="hax-radar" width="100" height="100" style="display:none;margin-top:10px;background:#222;border-radius:50%"></canvas>
+    `;
+    menu.appendChild(radar);
+
+    // Predictor
+    menu.appendChild(createModOption('predictor', 'Predictor (траектория мяча)'));
+
+    // Аим-пасы
+    menu.appendChild(createModOption('aim-passes', 'Аим-пасы'));
+
+    // Стабилизация
+    menu.appendChild(createModOption('stabilization', 'Стабилизация движения'));
+
+    // Анализ ошибок
+    menu.appendChild(createModOption('error-analysis', 'Анализ ошибок'));
+
+    // Индикатор пинга
+    menu.appendChild(createModOption('ping-indicator', 'Индикатор пинга игроков'));
+
+    // Фейк-буст
+    menu.appendChild(createModOption('fake-boost', 'Фейк-буст'));
+
+    // Скины
+    menu.appendChild(createModOption('custom-skins', 'Кастомные скины'));
+
+    // Автопереподключение
+    menu.appendChild(createModOption('auto-reconnect', 'Автопереподключение'));
+
+    // Анонимный режим
+    menu.appendChild(createModOption('anonymous-mode', 'Анонимный режим'));
+
+    // Спам в чат
+    const spamDiv = document.createElement('div');
+    spamDiv.style.marginTop = '10px';
+    spamDiv.innerHTML = `
+        <div>Спам в чат:</div>
+        <input type="text" id="spam-text" placeholder="Текст для спама" style="width:100%;margin:5px 0">
+        <button id="start-spam" style="background:#6a0dad;color:white;border:none;padding:3px;border-radius:3px">Старт</button>
+        <button id="stop-spam" style="background:#6a0dad;color:white;border:none;padding:3px;border-radius:3px">Стоп</button>
+    `;
+    menu.appendChild(spamDiv);
+
+    document.body.appendChild(menu);
+
+    // Обработчики
+    document.getElementById('fake-ping-value').addEventListener('change', (e) => {
+        fakePing = parseInt(e.target.value) || 0;
+    });
+
+    document.getElementById('show-radar').addEventListener('change', (e) => {
+        document.getElementById('hax-radar').style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    let spamInterval;
+    document.getElementById('start-spam').addEventListener('click', () => {
+        const text = document.getElementById('spam-text').value;
+        if (text) {
+            spamInterval = setInterval(() => {
+                if (room) room.sendChat(text);
+            }, 1000);
+        }
+    });
+    document.getElementById('stop-spam').addEventListener('click', () => {
+        clearInterval(spamInterval);
+    });
+
+    // Автоудар
+    setInterval(() => {
+        if (document.getElementById('auto-kick')?.checked && room) {
+            const players = room.getPlayerList();
+            const me = players.find(p => p.id === room.getPlayerId());
+            if (me && me.position) {
+                const ball = room.getBallPosition();
+                if (ball && distance(me.position, ball) < 5) {
+                    room.sendInput({ kick: true });
+                }
+            }
+        }
+    }, 50);
+}
+
+function createModOption(id, label) {
+    const div = document.createElement('div');
+    div.innerHTML = `
+        <label>
+            <input type="checkbox" id="${id}"> ${label}
+        </label>
+    `;
+    return div;
+}
+
+function distance(p1, p2) {
+    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+}
+
+// 4. Быстрые команды чата
+function addQuickChatButtons() {
+    const buttons = [
+        { text: 'Пас!', cmd: 'pass' },
+        { text: 'Я открыт!', cmd: 'open' },
+        { text: 'Откатись!', cmd: 'back' },
+        { text: 'Вратарь!', cmd: 'gk' },
+        { text: 'Атакуем!', cmd: 'attack' },
+        { text: 'Защищаем!', cmd: 'defend' }
+    ];
+
+    const container = document.createElement('div');
+    container.style = `
+        position: fixed;
+        bottom: 150px;
+        right: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        z-index: 999;
+    `;
+
+    buttons.forEach(btn => {
+        const button = document.createElement('button');
+        button.textContent = btn.text;
+        button.style = `
+            background: #6a0dad;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        `;
+        button.onclick = () => {
+            if (room) room.sendChat(btn.text);
+        };
+        container.appendChild(button);
+    });
+
+    document.body.appendChild(container);
+}
+
+// Инициализация
+function initMod() {
+    if (!gameFrame) {
+        gameFrame = document.querySelector('.gameframe')?.contentWindow;
+        if (!gameFrame) return setTimeout(initMod, 1000);
+    }
+
+    if (!body) {
+        body = gameFrame.document.body;
+        if (!body) return setTimeout(initMod, 1000);
+    }
+
+    if (!room) {
+        room = gameFrame.HBInit;
+        if (!room) return setTimeout(initMod, 1000);
+    }
+
+    addFpsPingMeter();
+    enhanceChat();
+    createModMenu();
+    addQuickChatButtons();
+}
+
+// Запускаем мод
+setTimeout(initMod, 3000);
