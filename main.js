@@ -1123,3 +1123,60 @@ if (typeof VIRTUAL_JOYSTICK !== 'undefined') {
         joystickRootStylesheet.innerHTML = ":root {--joystick-size: " + storedSize + "vh;--joystick-margin: " + storedMargin + "vh;--joystick-opacity: " + storedOpacity + "}"
     }
 }
+
+const observerContainers = [
+    body.querySelector('.game-view'),
+    body.querySelector('.room-view'),
+    body.querySelector('.settings-view'),
+    body.querySelector('.roomlist-view')
+].filter(Boolean);
+observerContainers.forEach(container => observer.observe(container, observerConfig));
+
+function onDOMChange(mutationsList, observer) {
+    for (const mutation of mutationsList) {
+        if (mutation.type !== 'childList') continue; // Игнорировать изменения атрибутов или текста
+        if (!getByDataHook("loader-view")) {
+            // Ваша текущая логика
+        }
+    }
+}
+
+let debounceTimeout;
+function onDOMChange(mutationsList, observer) {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+        if (!getByDataHook("loader-view")) {
+            // Ваша текущая логика
+        }
+    }, 100); // Задержка 100 мс
+}
+
+if (body.querySelector('.game-view') && !body.querySelector('.showing-room-view')) {
+    observer.disconnect(); // Отключить наблюдатель
+    showControls(true);
+    handleFPSText();
+}
+
+(function() {
+    const settingsInterval = setInterval(() => {
+        if (!window.gameFrame || !gameFrame.document || !gameFrame.document.body) return;
+        const settingsView = gameFrame.document.querySelector('.settings-view .tabcontents');
+        if (!settingsView) return;
+
+        if (!gameFrame.document.getElementById('mod-settings-tab')) {
+            const modTab = document.createElement('div');
+            modTab.className = 'section selected';
+            modTab.id = 'mod-settings-tab';
+            modTab.innerHTML = `
+                <h1 style="color:#9f7aea;">Mod Settings</h1>
+                <div style="margin-top:10px;">
+                    <button style="background:#9f7aea;border:none;border-radius:6px;padding:8px;margin:5px;width:100%;color:white;font-weight:bold;cursor:pointer;" onclick="alert('Minimap Toggled!')">Toggle Minimap</button>
+                    <button style="background:#9f7aea;border:none;border-radius:6px;padding:8px;margin:5px;width:100%;color:white;font-weight:bold;cursor:pointer;" onclick="alert('Fake Ping Toggled!')">Toggle Fake Ping</button>
+                    <button style="background:#9f7aea;border:none;border-radius:6px;padding:8px;margin:5px;width:100%;color:white;font-weight:bold;cursor:pointer;" onclick="alert('Chat Spam Started!')">Start Chat Spam</button>
+                </div>
+            `;
+            settingsView.appendChild(modTab);
+        }
+        clearInterval(settingsInterval);
+    }, 1000);
+})();
