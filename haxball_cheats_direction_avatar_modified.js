@@ -404,34 +404,46 @@ function setupGameUI() {
             requestAnimationFrame(frameCounter);
         }
         frameCounter();
-  // Отображение направления мяча
+  // Добавляем элемент для отображения направления
 const directionElement = document.createElement("div");
 directionElement.id = "ball-direction";
-directionElement.style.cssText = "position:fixed;bottom:50px;left:50%;transform:translateX(-50%);color:white;font-size:16px;z-index:999;background:#000a;padding:4px 8px;border-radius:8px;";
+directionElement.style.cssText = `
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 16px;
+    z-index: 999;
+    background: #000a;
+    padding: 4px 8px;
+    border-radius: 8px;
+`;
 document.body.appendChild(directionElement);
 
-setInterval(() => {
-    if (!cheats.autoDirection) {
-        directionElement.style.display = "none";
-        return;
-    }
-    
-    directionElement.style.display = "block";
-    let ball = null;
+// Функция для обновления направления
+function updateBallDirection() {
     try {
-        ball = gameFrame.room?.gameState?.DISK?.find(d => d.id === 0);
-    } catch {}
+        const ball = gameFrame.room?.gameState?.DISK?.find(d => d.id === 0);
+        if (!ball || !ball.pos || !ball.speed) {
+            directionElement.textContent = "Мяч не найден";
+            return;
+        }
 
-    if (!ball || !ball.pos || !ball.speed) {
-        directionElement.textContent = "Мяч не найден";
-        return;
-    }
-
-    const [vx, vy] = ball.speed;
-    const angle = Math.atan2(vy, vx) * (180 / Math.PI);
-    directionElement.textContent = `Направление: ${angle.toFixed(1)}°`;
-}, 100);
+        const [vx, vy] = ball.speed;
+        const angle = Math.atan2(vy, vx) * (180 / Math.PI);
+        const speed = Math.sqrt(vx*vx + vy*vy).toFixed(1);
         
+        directionElement.textContent = `Направление: ${angle.toFixed(1)}° | Скорость: ${speed}`;
+        directionElement.style.display = "block";
+    } catch (e) {
+        console.error("Ошибка при определении направления:", e);
+        directionElement.style.display = "none";
+    }
+}
+
+// Запускаем обновление каждые 100мс
+setInterval(updateBallDirection, 100);
     // Плавающий шар
     if (!document.getElementById("cheat-button")) {
         const ball = document.createElement("div");
