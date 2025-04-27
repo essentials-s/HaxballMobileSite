@@ -1180,3 +1180,65 @@ if (body.querySelector('.game-view') && !body.querySelector('.showing-room-view'
         clearInterval(settingsInterval);
     }, 1000);
 })();
+
+class NetGraph {
+    constructor() {
+        this.fps = 0;
+        this.ping = 0;
+        this.choke = 0;
+        this.loss = 0;
+        this.netGraphEnabled = true;
+        this.position = 2; // 1 = слева, 2 = центр, 3 = справа
+    }
+
+    update(fps, ping, choke, loss) {
+        this.fps = fps;
+        this.ping = ping;
+        this.choke = choke;
+        this.loss = loss;
+    }
+
+    draw() {
+        if (!this.netGraphEnabled) return;
+
+        let posX;
+        switch (this.position) {
+            case 1:
+                posX = "Left";
+                break;
+            case 2:
+                posX = "Center";
+                break;
+            case 3:
+                posX = "Right";
+                break;
+            default:
+                posX = "Center";
+        }
+
+        console.log(`[NetGraph] Position: ${posX}`);
+        console.log(`[NetGraph] FPS: ${this.fps}`);
+        console.log(`[NetGraph] Ping: ${this.ping} ms`);
+        console.log(`[NetGraph] Choke: ${this.choke}`);
+        console.log(`[NetGraph] Loss: ${this.loss}`);
+    }
+
+    toggle(state) {
+        this.netGraphEnabled = state;
+    }
+}
+
+// Пример использования:
+const netGraph = new NetGraph();
+
+// Обновляем данные (например, каждую секунду)
+setInterval(() => {
+    // Здесь могли бы быть реальные данные
+    const fps = Math.floor(100 + Math.random() * 40);
+    const ping = Math.floor(30 + Math.random() * 20);
+    const choke = Math.floor(Math.random() * 5);
+    const loss = Math.floor(Math.random() * 2);
+
+    netGraph.update(fps, ping, choke, loss);
+    netGraph.draw();
+}, 1000);
