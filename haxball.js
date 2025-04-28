@@ -316,6 +316,40 @@ function createURLButton() {
     }
 }
 
+// Функция для добавления раздела "Mod" в настройки
+function createModSettings(settingsContainer) {
+    // Заголовок раздела
+    const modSettingsTitle = document.createElement("h2");
+    modSettingsTitle.textContent = "Mod Settings";
+    settingsContainer.appendChild(modSettingsTitle);
+
+    // Чекбокс для включения мода
+    const modEnableCheckbox = document.createElement("input");
+    modEnableCheckbox.type = "checkbox";
+    modEnableCheckbox.id = "modEnabled";
+
+    const modEnableLabel = document.createElement("label");
+    modEnableLabel.htmlFor = "modEnabled";
+    modEnableLabel.textContent = "Enable Special Mod";
+
+    // Объединяем чекбокс и текст
+    const wrapper = document.createElement("div");
+    wrapper.appendChild(modEnableCheckbox);
+    wrapper.appendChild(modEnableLabel);
+
+    settingsContainer.appendChild(wrapper);
+
+    // Сохраняем настройку в localStorage
+    modEnableCheckbox.addEventListener("change", function() {
+        localStorage.setItem("modEnabled", modEnableCheckbox.checked ? "true" : "false");
+    });
+
+    // При загрузке страницы восстанавливаем значение
+    const saved = localStorage.getItem("modEnabled");
+    if (saved === "true") {
+        modEnableCheckbox.checked = true;
+    }
+}
 //Set a custom stylesheet
 if (typeof CUSTOM_CSS !== 'undefined') {
     stylesheet.innerHTML += CUSTOM_CSS;
