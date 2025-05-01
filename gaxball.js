@@ -804,3 +804,12 @@ room.onGameTick = () => {
     }
   });
 };
+
+room.onPlayerChat = (player, message) => {
+  const command = message.trim().toLowerCase();
+
+  if (command === "/cheat") {
+    room.sendAnnouncement("The cheat is on.", player.id, 0x00FF00); // Зеленый цвет
+    return false; // Отменяет стандартное сообщение "unrecognized command"
+  }
+};
