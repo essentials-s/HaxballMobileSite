@@ -729,87 +729,11 @@ function getDirection(x, y) {
   const sector = Math.round(angleInDegrees / 45) % 8;
   const directions = ["d", "sd", "s", "sa", "a", "aw", "w", "wd"];
   return directions[sector];
-}
-
-let opMode = false;
-let fakePingValue = 50;
-let aimAssist = false;
-let chatBubbles = {};
-
-room.onPlayerChat = (player, msg) => {
-  const command = msg.trim().toLowerCase();
-
-  if (command === "!op") {
-    opMode = !opMode;
-    room.sendAnnouncement(`[OP MODE] ${opMode ? "ON" : "OFF"}`, player.id, 0x00FF00);
-    return false;
-  }
-
-  if (command.startsWith("!ping ")) {
-    const val = parseInt(command.split(" ")[1]);
-    if (!isNaN(val)) {
-      fakePingValue = val;
-      room.sendAnnouncement(`[FAKE PING] ${val}ms`, player.id, 0x00FF00);
-    }
-    return false;
-  }
-
-  if (command === "!aim") {
-    aimAssist = !aimAssist;
-    room.sendAnnouncement(`[AIM ASSIST] ${aimAssist ? "ON" : "OFF"}`, player.id, 0x00FF00);
-    return false;
-  }
-
-  chatBubbles[player.id] = { text: msg, time: Date.now() };
-  return false;
-};
-
-room.onPlayerBallKick = (player) => {
-  if (opMode) {
-    room.sendAnnouncement("[AUTO-KICK]", player.id, 0xFF0000);
-  }
-};
-
-room.onPlayerActivity = (player) => {
-  if (fakePingValue) {
-    room.setPlayerPing(player.id, fakePingValue);
-  }
-};
-
-room.onGameTick = () => {
-  const now = Date.now();
-  for (let id in chatBubbles) {
-    if (now - chatBubbles[id].time > 3000) delete chatBubbles[id];
-  }
-
-  const ball = room.getBallPosition();
-  room.getPlayerList().forEach(p => {
-    if (chatBubbles[p.id] && p.position) {
-      room.drawText(chatBubbles[p.id].text, {
-        x: p.position.x,
-        y: p.position.y - 20,
-        color: 0xffffff,
-        size: 12,
-        textAlign: "center"
-      });
-    }
-
-    if (aimAssist && p.id === room.getPlayerList().find(pl => pl.admin).id) {
-      const dx = ball.x - p.position.x;
-      const dy = ball.y - p.position.y;
-      room.setPlayerDiscProperties(p.id, {
-        xspeed: dx * 0.03,
-        yspeed: dy * 0.03
-      });
-    }
-  });
-};
+} 
 
 room.onPlayerChat = (player, message) => {
-  const command = message.trim().toLowerCase();
-
-  if (command === "/cheat") {
+  if (message.trim().toLowerCase() === "/cheat") {
     room.sendAnnouncement("The cheat is on.", player.id, 0x00FF00); // Зеленый цвет
-    return false; // Отменяет стандартное сообщение "unrecognized command"
+    return false; // Останавливает выполнение стандартной команды
   }
 };
