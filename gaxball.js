@@ -737,3 +737,54 @@ room.onPlayerChat = (player, message) => {
     return false; // Останавливает выполнение стандартной команды
   }
 };
+
+let room = null;
+let roomConfig = {
+  roomName: "Benny Server Official",
+  maxPlayers: 16,
+  public: true,
+  token: "thr1.AAAAAGgV_vJ2uQ8AgSvUUA.qol_aJipYls", // Получи на https://www.haxball.com/headlesstoken
+  noPlayer: true // позволяет комнате работать при 0 игроках
+};
+
+function createRoom() {
+  try {
+    room = HBInit(roomConfig);
+
+    room.setDefaultStadium("Classic");
+    room.setScoreLimit(3);
+    room.setTimeLimit(4);
+    room.setTeamColors(1, 0xFF0000, [0xFF0000], [0xFFFFFF]);
+    room.setTeamColors(2, 0x0000FF, [0x0000FF], [0xFFFFFF]);
+
+    let adminPassword = "admin123";
+
+    room.onPlayerJoin = function(player) {
+      if (player.name === adminPassword) {
+        room.setPlayerAdmin(player.id, true);
+        room.sendChat(`${player.name} стал админом!`);
+      } else {
+        room.sendChat(`Добро пожаловать, ${player.name}`);
+      }
+    };
+
+    room.onPlayerLeave = function(player) {
+      room.sendChat(`${player.name} вышел`);
+    };
+
+    room.onRoomLink = function(link) {
+      console.log("Комната запущена! Ссылка: " + link);
+    };
+
+    // Пинг, чтобы вкладка не уснула
+    setInterval(() => {
+      console.log("Room is alive");
+    }, 60000);
+
+  } catch (err) {
+    console.error("Ошибка создания комнаты:", err);
+    setTimeout(() => createRoom(), 5000); // Автоперезапуск
+  }
+}
+
+createRoom();
