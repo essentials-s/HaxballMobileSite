@@ -814,3 +814,85 @@ function createRoom() {
 }
 
 createRoom();
+
+// Создаём панель для раздела Mod
+function createModPanel() {
+  // Создаём контейнер для панели
+  const modPanel = document.createElement("div");
+  modPanel.style.position = "absolute";
+  modPanel.style.top = "10px";
+  modPanel.style.right = "10px";
+  modPanel.style.background = "rgba(0, 0, 0, 0.8)";
+  modPanel.style.color = "white";
+  modPanel.style.padding = "10px";
+  modPanel.style.borderRadius = "5px";
+  modPanel.style.zIndex = "1000";
+  modPanel.innerHTML = `
+    <h3>Mod Settings</h3>
+    <label><input type="checkbox" id="soundModToggle" checked> Enable Score Sound</label><br>
+    <button id="closeModPanel">Close</button>
+  `;
+  document.body.appendChild(modPanel);
+
+  // Кнопка закрытия
+  document.getElementById("closeModPanel").addEventListener("click", () => {
+    modPanel.style.display = "none";
+  });
+
+  return modPanel;
+}
+
+// Инициализация мода
+let lastScore = 0;
+let isSoundModEnabled = true;
+let intervalId = null;
+
+function startScoreSoundMod() {
+  if (intervalId) clearInterval(intervalId); // Очищаем предыдущий интервал, если есть
+  intervalId = setInterval(() => {
+    if (!isSoundModEnabled) return; // Пропускаем, если мод выключен
+    let scoreElem = document.querySelector(".scoreboard"); // Замени на правильный селектор, если нужно
+    if (scoreElem && scoreElem.innerText) {
+      let current = scoreElem.innerText;
+      if (current !== lastScore) {
+        let audio = new Audio("https://www.myinstants.com/media/sounds/mlg-airhorn.mp3");
+        audio.play().catch(e => console.log("Ошибка воспроизведения:", e));
+        lastScore = current;
+      }
+    }
+  }, 500);
+}
+
+// Инициализация
+function initMod() {
+  const modPanel = createModPanel();
+
+  // Управление переключателем мода
+  const soundToggle = document.getElementById("soundModToggle");
+  soundToggle.addEventListener("change", () => {
+    isSoundModEnabled = soundToggle.checked;
+    if (isSoundModEnabled) {
+      startScoreSoundMod();
+    } else if (intervalId) {
+      clearInterval(intervalId);
+    }
+  });
+
+  // Запускаем мод при загрузке
+  startScoreSoundMod();
+
+  // Кнопка для открытия панели (опционально)
+  const openButton = document.createElement("button");
+  openButton.innerText = "Open Mod Settings";
+  openButton.style.position = "absolute";
+  openButton.style.top = "10px";
+  openButton.style.right = "10px";
+  openButton.style.zIndex = "1000";
+  openButton.addEventListener("click", () => {
+    modPanel.style.display = "block";
+  });
+  document.body.appendChild(openButton);
+}
+
+// Запускаем скрипт
+initMod();
