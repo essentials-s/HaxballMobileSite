@@ -740,8 +740,8 @@ room.onPlayerChat = (player, message) => {
 
 let room = null;
 let roomConfig = {
-  roomName: "Benny Server Official",
-  maxPlayers: 16,
+  roomName: "My Android Server",
+  maxPlayers: 8,
   public: true,
   token: "thr1.AAAAAGgV_vJ2uQ8AgSvUUA.qol_aJipYls", // Получи на https://www.haxball.com/headlesstoken
   noPlayer: true // позволяет комнате работать при 0 игроках
@@ -750,6 +750,11 @@ let roomConfig = {
 function createRoom() {
   try {
     room = HBInit(roomConfig);
+    
+    if (!room) {
+      console.error("Не удалось создать комнату!");
+      return;
+    }
 
     room.setDefaultStadium("Classic");
     room.setScoreLimit(3);
@@ -757,7 +762,7 @@ function createRoom() {
     room.setTeamColors(1, 0xFF0000, [0xFF0000], [0xFFFFFF]);
     room.setTeamColors(2, 0x0000FF, [0x0000FF], [0xFFFFFF]);
 
-    let adminPassword = "admin123";
+    let adminPassword = "admin123"; // Пароль для админа
 
     room.onPlayerJoin = function(player) {
       if (player.name === adminPassword) {
@@ -774,6 +779,27 @@ function createRoom() {
 
     room.onRoomLink = function(link) {
       console.log("Комната запущена! Ссылка: " + link);
+    };
+
+    // Обработка команд
+    room.onChatMessage = function(player, message) {
+      let command = message.toLowerCase();
+
+      if (command === "!reset") {
+        room.sendChat("Перезапускаю игру...");
+        room.stopGame();
+        setTimeout(() => room.startGame(), 2000);
+      }
+
+      if (command === "!blue" && player.team !== 2) {
+        room.setPlayerTeam(player.id, 2); // Смена на синих
+        room.sendChat(`${player.name} теперь в синей команде!`);
+      }
+
+      if (command === "!red" && player.team !== 1) {
+        room.setPlayerTeam(player.id, 1); // Смена на красных
+        room.sendChat(`${player.name} теперь в красной команде!`);
+      }
     };
 
     // Пинг, чтобы вкладка не уснула
