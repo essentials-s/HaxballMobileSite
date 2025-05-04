@@ -896,3 +896,7 @@ function initMod() {
 
 // Запускаем скрипт
 initMod();
+
+function filterByCountry(rooms, countryCode) {
+  return rooms.filter(room => room.country === countryCode.toUpperCase());
+}
