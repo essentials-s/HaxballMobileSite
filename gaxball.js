@@ -900,3 +900,5 @@ initMod();
 function filterByCountry(rooms, countryCode) {
   return rooms.filter(room => room.country === countryCode.toUpperCase());
 }
+
+const filteredRooms = filterByCountry(roomList, "RU"); // Только комнаты из России
