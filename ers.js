@@ -1,4 +1,51 @@
 (function () {
+  const translations = {
+    "Create Room": "Создать комнату",
+    "Join Room": "Присоединиться",
+    "Player Name": "Имя игрока",
+    "Room Name": "Название комнаты",
+    "Password": "Пароль",
+    "Public": "Публичная",
+    "Private": "Приватная",
+    "Red": "Красные",
+    "Blue": "Синие",
+    "Spectators": "Зрители",
+    "Start Game": "Начать игру",
+    "Leave": "Выйти",
+    "Pause": "Пауза",
+    "Resume": "Продолжить",
+    "Options": "Настройки",
+    "Team": "Команда",
+    "Chat": "Чат",
+    "Ping": "Пинг",
+    "Kick": "Выгнать",
+    "Ban": "Забанить",
+    "Host": "Хост",
+    "Admin": "Админ",
+    "Score": "Счёт",
+    "Time": "Время",
+    "Mute": "Заглушить",
+    "Unmute": "Разглушить"
+  };
+
+  const observer = new MutationObserver(() => {
+    document.querySelectorAll("*").forEach(el => {
+      if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
+        const txt = el.textContent.trim();
+        if (translations[txt]) {
+          el.textContent = translations[txt];
+        }
+      }
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+})();
+
+(function () {
   const overlay = document.createElement("div");
   overlay.style.position = "fixed";
   overlay.style.top = "0";
