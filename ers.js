@@ -1,3 +1,20 @@
+// Рассчитываем масштаб на основе DPI
+const isMobile = /Android|iPhone/i.test(navigator.userAgent);
+if (isMobile) {
+  const baseWidth = 500; // Ширина, на которой интерфейс выглядит нормально
+  const scale = Math.min(1.8, window.innerWidth / baseWidth);
+  
+  const adaptiveStyle = document.createElement('style');
+  adaptiveStyle.textContent = `
+    .game-ui-container {
+      transform: scale(${scale}) !important;
+      transform-origin: 0 0 !important;
+      margin-left: ${scale < 1 ? '15px' : '0'} !important;
+    }
+  `;
+  document.head.appendChild(adaptiveStyle);
+}
+
 (function() {
   // Ждём полной загрузки игры
   const checkGameLoaded = setInterval(() => {
