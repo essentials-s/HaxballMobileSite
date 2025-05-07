@@ -80,6 +80,82 @@
   observer.observe(document.body, { childList: true, subtree: true });
 })();
 
+(function() {
+    'use strict';
+
+    // Array of English alphabet letters
+    const avatars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    let currentIndex = 0; // Index to track the current avatar
+    let isAvatarChanging = false; // Flag to check if avatar changing is active
+
+    // Function to change the avatar
+    const changeAvatar = function(key) {
+        let inputHax = document.querySelector('.input input');
+        let buttonHax = document.querySelector('.input button');
+        inputHax.value = '/avatar ' + key;
+        buttonHax.click();
+        removeAvatarSet();
+    };
+
+    // Function to remove the "Avatar set" notice
+    const removeAvatarSet = function() {
+        let noticeList = document.querySelectorAll('div.log p.notice');
+        for (let i = 0; i < noticeList.length; i++) {
+            if (noticeList[i].innerText === 'Avatar set') {
+                noticeList[i].parentNode.removeChild(noticeList[i]);
+            }
+        }
+    };
+
+    // Function to cycle through avatars
+    const cycleAvatars = function() {
+        if (isAvatarChanging) {
+            changeAvatar(avatars[currentIndex]);
+            currentIndex = (currentIndex + 1) % avatars.length;
+        }
+    };
+
+    // Set an interval to change the avatar every 0.5 second
+    const avatarInterval = setInterval(cycleAvatars, 500);
+
+    // Function to toggle avatar changing on/off
+    const toggleAvatarChange = function(isEnabled) {
+        isAvatarChanging = isEnabled;
+        if (!isAvatarChanging) {
+            clearInterval(avatarInterval); // Stop the avatar change when disabled
+        } else {
+            setInterval(cycleAvatars, 500); // Restart avatar changing
+        }
+    };
+
+    // Add a switch to the mod menu
+    const createSwitchMenu = function() {
+        const menuContainer = document.createElement('div');
+        menuContainer.style.position = 'absolute';
+        menuContainer.style.top = '20px';
+        menuContainer.style.right = '20px';
+        menuContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        menuContainer.style.padding = '10px';
+        menuContainer.style.borderRadius = '10px';
+
+        const switchLabel = document.createElement('label');
+        switchLabel.textContent = 'Смена аватара:';
+        switchLabel.style.color = 'white';
+        menuContainer.appendChild(switchLabel);
+
+        const switchButton = document.createElement('input');
+        switchButton.type = 'checkbox';
+        switchButton.addEventListener('change', (e) => toggleAvatarChange(e.target.checked));
+        menuContainer.appendChild(switchButton);
+
+        document.body.appendChild(menuContainer);
+    };
+
+    // Create the switch menu
+    createSwitchMenu();
+
+})();
+
 (function () {
   const overlay = document.createElement("div");
   overlay.style.position = "fixed";
