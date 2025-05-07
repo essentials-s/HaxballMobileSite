@@ -1,174 +1,160 @@
-(function () {
-  // Создаем стили для меню
-  const style = document.createElement('style');
-  style.textContent = `
-    .mod-menu {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: rgba(30, 30, 30, 0.7);
-      backdrop-filter: blur(10px);
-      border-radius: 12px;
-      padding: 12px;
-      color: white;
-      font-family: sans-serif;
-      z-index: 9999;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      min-width: 200px;
-    }
-    .mod-menu button {
-      background: rgba(50, 50, 50, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: white;
-      border-radius: 6px;
-      padding: 8px 12px;
-      margin: 4px 0;
-      cursor: pointer;
-      width: 100%;
-      text-align: left;
-    }
-    .mod-menu button:hover {
-      background: rgba(70, 70, 70, 0.7);
-    }
-    .mod-menu label {
-      display: flex;
-      align-items: center;
-      margin: 8px 0;
-    }
-    .mod-menu input[type="range"] {
-      flex-grow: 1;
-      margin-left: 10px;
-    }
-    .menu-toggle {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 48px;
-      height: 48px;
-      background: rgba(30, 30, 30, 0.7);
-      backdrop-filter: blur(10px);
-      border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: white;
-      font-size: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 10000;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    }
-  `;
-  document.head.appendChild(style);
+// ==UserScript==
+// @name        Haxball Mobile Mods
+// @namespace   Violentmonkey Scripts
+// @match       https://*.haxball.com/*
+// @grant       none
+// @version     1.0
+// @author      -
+// @description Моды для Haxball на телефоне: авто-удар, траектория мяча, запись игры.
+// ==/UserScript==
 
-  // Создаем кнопку меню
-  const menuBtn = document.createElement('div');
-  menuBtn.className = 'menu-toggle';
-  menuBtn.textContent = '≡';
-  document.body.appendChild(menuBtn);
+(function() {
+  // Ждём полной загрузки игры
+  const checkGameLoaded = setInterval(() => {
+    const gameFrame = document.querySelector('.gameframe');
+    if (!gameFrame) return;
 
-  // Создаем само меню
-  const menu = document.createElement('div');
-  menu.className = 'mod-menu';
-  menu.style.display = 'none';
-  document.body.appendChild(menu);
+    const gameWindow = gameFrame.contentWindow;
+    if (!gameWindow || !gameWindow.game) return;
 
-  // Переключатель меню
-  menuBtn.onclick = () => {
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-  };
+    clearInterval(checkGameLoaded);
+    initMods(gameWindow);
+  }, 1000);
 
-  // Авто-удар
-  let autoKickEnabled = false;
-  let autoKickInterval;
-  const autoKickToggle = document.createElement('button');
-  autoKickToggle.textContent = 'Авто-удар: ВЫКЛ';
-  menu.appendChild(autoKickToggle);
+  function initMods(gameWindow) {
+    // Стили для мод-меню
+    const style = document.createElement('style');
+    style.textContent = `
+      .mod-menu {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(40, 40, 40, 0.8);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 12px;
+        color: white;
+        font-family: sans-serif;
+        z-index: 9999;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .mod-btn {
+        background: rgba(70, 70, 70, 0.6);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 5px 0;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+      }
+      .mod-btn.active {
+        background: rgba(110, 180, 80, 0.7);
+      }
+      .mod-slider {
+        width: 100%;
+        margin: 10px 0;
+      }
+    `;
+    document.head.appendChild(style);
 
-  autoKickToggle.onclick = () => {
-    autoKickEnabled = !autoKickEnabled;
-    autoKickToggle.textContent = `Авто-удар: ${autoKickEnabled ? 'ВКЛ' : 'ВКЛ'}`;
-    
-    if (autoKickEnabled) {
-      autoKickInterval = setInterval(() => {
-        if (window.game && game.ball) {
-          const player = game.players.find(p => p.id === game.myPlayerId);
-          if (player) {
-            const distance = Math.sqrt(
-              Math.pow(player.x - game.ball.x, 2) + 
-              Math.pow(player.y - game.ball.y, 2)
-            );
-            if (distance < 50) {
-              kick('keydown');
-              setTimeout(() => kick('keyup'), 100);
-            }
+    // Создаём меню
+    const menu = document.createElement('div');
+    menu.className = 'mod-menu';
+    menu.innerHTML = `
+      <button id="autoKickBtn" class="mod-btn">Авто-удар: ВЫКЛ</button>
+      <button id="trajectoryBtn" class="mod-btn">Траектория: ВЫКЛ</button>
+      <input type="range" id="trajectoryOpacity" class="mod-slider" min="0" max="100" value="50">
+      <button id="recBtn" class="mod-btn">Запись (REC)</button>
+    `;
+    document.body.appendChild(menu);
+
+    // Переменные для модов
+    let autoKickEnabled = false;
+    let drawTrajectory = false;
+    let trajectoryOpacity = 0.5;
+    let isRecording = false;
+    let recordedData = [];
+
+    // Авто-удар
+    const autoKickBtn = document.getElementById('autoKickBtn');
+    autoKickBtn.addEventListener('click', () => {
+      autoKickEnabled = !autoKickEnabled;
+      autoKickBtn.textContent = `Авто-удар: ${autoKickEnabled ? 'ВКЛ' : 'ВЫКЛ'}`;
+      autoKickBtn.classList.toggle('active', autoKickEnabled);
+    });
+
+    // Траектория мяча
+    const trajectoryBtn = document.getElementById('trajectoryBtn');
+    trajectoryBtn.addEventListener('click', () => {
+      drawTrajectory = !drawTrajectory;
+      trajectoryBtn.textContent = `Траектория: ${drawTrajectory ? 'ВКЛ' : 'ВЫКЛ'}`;
+      trajectoryBtn.classList.toggle('active', drawTrajectory);
+    });
+
+    // Прозрачность траектории
+    const opacitySlider = document.getElementById('trajectoryOpacity');
+    opacitySlider.addEventListener('input', (e) => {
+      trajectoryOpacity = e.target.value / 100;
+    });
+
+    // Запись игры
+    const recBtn = document.getElementById('recBtn');
+    recBtn.addEventListener('click', () => {
+      isRecording = !isRecording;
+      recBtn.textContent = isRecording ? 'Запись (STOP)' : 'Запись (REC)';
+      recBtn.classList.toggle('active', isRecording);
+      if (!isRecording && recordedData.length > 0) {
+        console.log('Запись сохранена:', recordedData);
+        recordedData = [];
+      }
+    });
+
+    // Перехват рендера игры
+    const originalRender = gameWindow.render;
+    gameWindow.render = function() {
+      if (originalRender) originalRender();
+
+      // Авто-удар
+      if (autoKickEnabled && gameWindow.game?.ball) {
+        const player = gameWindow.game.players.find(p => p.id === gameWindow.game.myPlayerId);
+        if (player) {
+          const dist = Math.hypot(player.x - gameWindow.game.ball.x, player.y - gameWindow.game.ball.y);
+          if (dist < 30) {
+            gameWindow.document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyX' }));
+            setTimeout(() => gameWindow.document.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyX' })), 100);
           }
         }
-      }, 100);
-    } else {
-      clearInterval(autoKickInterval);
-    }
-  };
+      }
 
-  // Траектория мяча
-  let drawTrajectory = false;
-  let trajectoryOpacity = 0.5;
-  const trajectoryToggle = document.createElement('button');
-  trajectoryToggle.textContent = 'Траектория мяча: ВЫКЛ';
-  menu.appendChild(trajectoryToggle);
+      // Траектория мяча
+      if (drawTrajectory && gameWindow.game?.ball) {
+        const ctx = gameWindow.document.querySelector('canvas')?.getContext('2d');
+        if (ctx) {
+          const { x, y, xs, ys } = gameWindow.game.ball;
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(0, 255, 0, ${trajectoryOpacity})`;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 3]);
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + xs * 20, y + ys * 20);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
 
-  const trajectoryOpacitySlider = document.createElement('div');
-  trajectoryOpacitySlider.innerHTML = `
-    <label>
-      Прозрачность:
-      <input type="range" min="0" max="1" step="0.1" value="${trajectoryOpacity}">
-      <span>${Math.round(trajectoryOpacity * 100)}%</span>
-    </label>
-  `;
-  menu.appendChild(trajectoryOpacitySlider);
-
-  trajectoryToggle.onclick = () => {
-    drawTrajectory = !drawTrajectory;
-    trajectoryToggle.textContent = `Траектория мяча: ${drawTrajectory ? 'ВКЛ' : 'ВЫКЛ'}`;
-  };
-
-  trajectoryOpacitySlider.querySelector('input').oninput = function() {
-    trajectoryOpacity = parseFloat(this.value);
-    this.nextElementSibling.textContent = `${Math.round(trajectoryOpacity * 100)}%`;
-  };
-
-  // Перехватываем рендер игры для отрисовки траектории
-  const oldRender = window.render;
-  window.render = function() {
-    if (typeof oldRender === 'function') oldRender();
-
-    if (drawTrajectory && window.game && game.ball) {
-      const ctx = document.querySelector("canvas")?.getContext("2d");
-      if (!ctx) return;
-      
-      const { x, y, xs, ys } = game.ball;
-      ctx.beginPath();
-      ctx.strokeStyle = `rgba(0, 255, 0, ${trajectoryOpacity})`;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 3]);
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + xs * 20, y + ys * 20);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-  };
-
-  // Функция для удара
-  function kick(state) {
-    try {
-      document.querySelector('.gameframe').contentWindow.document.dispatchEvent(
-        new KeyboardEvent(state, { code: "KeyX" })
-      );
-    } catch {}
+      // Запись данных
+      if (isRecording && gameWindow.game) {
+        recordedData.push({
+          time: Date.now(),
+          ball: { x: gameWindow.game.ball.x, y: gameWindow.game.ball.y },
+          players: gameWindow.game.players.map(p => ({ id: p.id, x: p.x, y: p.y }))
+        });
+      }
+    };
   }
 })();
-    
 
 (function () {
   const overlay = document.createElement("div");
