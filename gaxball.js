@@ -903,6 +903,8 @@ function filterByCountry(rooms, countryCode) {
 
 const filteredRooms = filterByCountry(roomList, "RU"); // Только комнаты из России
 
+}
+
 var room = HBInit({
 	roomName: "A t l a s  S e r v e r",
 	maxPlayers: 16,
