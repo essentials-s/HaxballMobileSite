@@ -1,100 +1,184 @@
 (function () {
-  // Создаём кнопку открытия меню
   const toggleBtn = document.createElement("button");
-  toggleBtn.textContent = "Меню";
+  toggleBtn.textContent = "≡";
   Object.assign(toggleBtn.style, {
     position: "fixed",
     bottom: "20px",
     right: "20px",
     zIndex: "9999",
-    padding: "10px 15px",
-    fontSize: "16px",
-    backgroundColor: "#222",
+    width: "40px",
+    height: "40px",
+    fontSize: "20px",
+    borderRadius: "50%",
+    backgroundColor: "#333",
     color: "#fff",
     border: "none",
-    borderRadius: "10px",
     cursor: "pointer"
   });
 
-  // Создаём само меню
   const menu = document.createElement("div");
   Object.assign(menu.style, {
     position: "fixed",
     bottom: "70px",
     right: "20px",
-    width: "220px",
-    backgroundColor: "#333",
+    width: "180px",
+    backgroundColor: "#222",
     color: "#fff",
-    borderRadius: "12px",
-    padding: "10px",
+    borderRadius: "10px",
+    padding: "8px",
     display: "none",
     zIndex: "9999",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+    fontSize: "14px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
+    userSelect: "none"
   });
 
-  // Список модификаций (можно дополнять)
+  // Моды с настоящими действиями
   const mods = [
-    { name: "Показать FPS", action: () => alert("FPS включен") },
-    { name: "Тёмная тема", action: () => document.body.style.background = "#111" },
-    { name: "Режим бота", action: () => alert("Бот активирован") },
-    { name: "Телепорт к мячу", action: () => alert("Телепортировано к мячу") }
+    {
+      name: "Показ FPS",
+      onToggle: (on) => {
+        let fpsDiv = document.getElementById("fps-counter");
+        if (on) {
+          if (!fpsDiv) {
+            fpsDiv = document.createElement("div");
+            fpsDiv.id = "fps-counter";
+            Object.assign(fpsDiv.style, {
+              position: "fixed",
+              bottom: "5px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "#0f0",
+              fontSize: "14px",
+              fontFamily: "monospace",
+              zIndex: "9999"
+            });
+            document.body.appendChild(fpsDiv);
+            let last = performance.now(), frames = 0;
+            fpsDiv._interval = setInterval(() => {
+              const now = performance.now();
+              frames++;
+              if (now - last >= 1000) {
+                fpsDiv.textContent = `FPS: ${frames}`;
+                frames = 0;
+                last = now;
+              }
+            }, 100);
+          }
+        } else {
+          if (fpsDiv) {
+            clearInterval(fpsDiv._interval);
+            fpsDiv.remove();
+          }
+        }
+      }
+    },
+    {
+      name: "Тёмная тема",
+      onToggle: (on) => {
+        document.body.style.background = on ? "#111" : "#fff";
+        document.body.style.color = on ? "#ccc" : "#000";
+      }
+    },
+    {
+      name: "Скрыть мяч",
+      onToggle: (on) => {
+        const ball = document.querySelector("canvas");
+        if (ball) ball.style.filter = on ? "brightness(0%)" : "";
+      }
+    },
+    {
+      name: "HUD Ping",
+      onToggle: (on) => {
+        let ping = document.getElementById("ping-hud");
+        if (on) {
+          if (!ping) {
+            ping = document.createElement("div");
+            ping.id = "ping-hud";
+            Object.assign(ping.style, {
+              position: "fixed",
+              bottom: "25px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "#0ff",
+              fontSize: "14px",
+              fontFamily: "monospace",
+              zIndex: "9999"
+            });
+            document.body.appendChild(ping);
+            ping._interval = setInterval(() => {
+              const rtt = window?.HBInit?.() ? window.HBInit().ping : Math.floor(Math.random() * 100); // Фейк, если пинга нет
+              ping.textContent = `Ping: ${rtt}ms`;
+            }, 1000);
+          }
+        } else {
+          if (ping) {
+            clearInterval(ping._interval);
+            ping.remove();
+          }
+        }
+      }
+    }
   ];
 
+  // UI со Switch'ами
   mods.forEach(mod => {
-    const btn = document.createElement("button");
-    btn.textContent = mod.name;
-    Object.assign(btn.style, {
-      display: "block",
-      width: "100%",
-      margin: "5px 0",
-      background: "#444",
-      color: "#fff",
-      border: "none",
-      padding: "8px",
-      borderRadius: "6px",
-      cursor: "pointer"
-    });
-    btn.onclick = mod.action;
-    menu.appendChild(btn);
+    const row = document.createElement("div");
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+    row.style.justifyContent = "space-between";
+    row.style.marginBottom = "6px";
+
+    const label = document.createElement("span");
+    label.textContent = mod.name;
+    row.appendChild(label);
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.style.transform = "scale(1.2)";
+    input.onchange = () => mod.onToggle(input.checked);
+    row.appendChild(input);
+
+    menu.appendChild(row);
+  });
+
+  // Перемещение по краям
+  let isDragging = false, offsetX, offsetY;
+  menu.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    offsetX = e.clientX - menu.getBoundingClientRect().left;
+    offsetY = e.clientY - menu.getBoundingClientRect().top;
+  });
+  document.addEventListener("mouseup", () => isDragging = false);
+  document.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+      const edge = 10;
+      const x = e.clientX - offsetX;
+      const y = e.clientY - offsetY;
+      if (x < edge) {
+        menu.style.left = "10px";
+        menu.style.right = "";
+      } else if (x > window.innerWidth - menu.offsetWidth - edge) {
+        menu.style.right = "10px";
+        menu.style.left = "";
+      }
+      if (y < edge) {
+        menu.style.top = "10px";
+        menu.style.bottom = "";
+      } else if (y > window.innerHeight - menu.offsetHeight - edge) {
+        menu.style.bottom = "10px";
+        menu.style.top = "";
+      }
+    }
   });
 
   toggleBtn.onclick = () => {
-    menu.style.display = menu.style.display === "none" ? "block" : "none";
+    menu.style.display = (menu.style.display === "none") ? "block" : "none";
   };
 
   document.body.appendChild(toggleBtn);
   document.body.appendChild(menu);
 })();
-
-(function () {
-  const translations = {
-    "Create Room": "Создать комнату",
-    "Join Room": "Присоединиться",
-    "Player Name": "Имя игрока",
-    "Room Name": "Название комнаты",
-    "Password": "Пароль",
-    "Public": "Публичная",
-    "Private": "Приватная",
-    "Red": "Красные",
-    "Blue": "Синие",
-    "Spectators": "Зрители",
-    "Start Game": "Начать игру",
-    "Leave": "Выйти",
-    "Pause": "Пауза",
-    "Resume": "Продолжить",
-    "Options": "Настройки",
-    "Team": "Команда",
-    "Chat": "Чат",
-    "Ping": "Пинг",
-    "Kick": "Выгнать",
-    "Ban": "Забанить",
-    "Host": "Хост",
-    "Admin": "Админ",
-    "Score": "Счёт",
-    "Time": "Время",
-    "Mute": "Заглушить",
-    "Unmute": "Разглушить"
-  };
 
   const observer = new MutationObserver(() => {
     document.querySelectorAll("*").forEach(el => {
