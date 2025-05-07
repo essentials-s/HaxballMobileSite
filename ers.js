@@ -1,4 +1,72 @@
 (function () {
+  // Создаём кнопку открытия меню
+  const toggleBtn = document.createElement("button");
+  toggleBtn.textContent = "Меню";
+  Object.assign(toggleBtn.style, {
+    position: "fixed",
+    bottom: "20px",
+    right: "20px",
+    zIndex: "9999",
+    padding: "10px 15px",
+    fontSize: "16px",
+    backgroundColor: "#222",
+    color: "#fff",
+    border: "none",
+    borderRadius: "10px",
+    cursor: "pointer"
+  });
+
+  // Создаём само меню
+  const menu = document.createElement("div");
+  Object.assign(menu.style, {
+    position: "fixed",
+    bottom: "70px",
+    right: "20px",
+    width: "220px",
+    backgroundColor: "#333",
+    color: "#fff",
+    borderRadius: "12px",
+    padding: "10px",
+    display: "none",
+    zIndex: "9999",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+  });
+
+  // Список модификаций (можно дополнять)
+  const mods = [
+    { name: "Показать FPS", action: () => alert("FPS включен") },
+    { name: "Тёмная тема", action: () => document.body.style.background = "#111" },
+    { name: "Режим бота", action: () => alert("Бот активирован") },
+    { name: "Телепорт к мячу", action: () => alert("Телепортировано к мячу") }
+  ];
+
+  mods.forEach(mod => {
+    const btn = document.createElement("button");
+    btn.textContent = mod.name;
+    Object.assign(btn.style, {
+      display: "block",
+      width: "100%",
+      margin: "5px 0",
+      background: "#444",
+      color: "#fff",
+      border: "none",
+      padding: "8px",
+      borderRadius: "6px",
+      cursor: "pointer"
+    });
+    btn.onclick = mod.action;
+    menu.appendChild(btn);
+  });
+
+  toggleBtn.onclick = () => {
+    menu.style.display = menu.style.display === "none" ? "block" : "none";
+  };
+
+  document.body.appendChild(toggleBtn);
+  document.body.appendChild(menu);
+})();
+
+(function () {
   const translations = {
     "Create Room": "Создать комнату",
     "Join Room": "Присоединиться",
