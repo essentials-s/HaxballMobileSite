@@ -1,13 +1,3 @@
-// ==UserScript==
-// @name        Haxball Mobile Mods
-// @namespace   Violentmonkey Scripts
-// @match       https://*.haxball.com/*
-// @grant       none
-// @version     1.0
-// @author      -
-// @description Моды для Haxball на телефоне: авто-удар, траектория мяча, запись игры.
-// ==/UserScript==
-
 (function() {
   // Ждём полной загрузки игры
   const checkGameLoaded = setInterval(() => {
