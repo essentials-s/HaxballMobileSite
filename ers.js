@@ -1,160 +1,174 @@
 (function () {
-  const menuBtn = document.createElement("button");
-  Object.assign(menuBtn.style, {
-    position: "fixed", bottom: "15px", right: "15px", width: "48px", height: "48px",
-    background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", borderRadius: "50%",
-    border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: "20px",
-    zIndex: 9999, cursor: "pointer"
-  });
-  menuBtn.textContent = "≡";
+  // Создаем стили для меню
+  const style = document.createElement('style');
+  style.textContent = `
+    .mod-menu {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(30, 30, 30, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 12px;
+      color: white;
+      font-family: sans-serif;
+      z-index: 9999;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      min-width: 200px;
+    }
+    .mod-menu button {
+      background: rgba(50, 50, 50, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin: 4px 0;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+    }
+    .mod-menu button:hover {
+      background: rgba(70, 70, 70, 0.7);
+    }
+    .mod-menu label {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+    }
+    .mod-menu input[type="range"] {
+      flex-grow: 1;
+      margin-left: 10px;
+    }
+    .menu-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 48px;
+      height: 48px;
+      background: rgba(30, 30, 30, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10000;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+  `;
+  document.head.appendChild(style);
 
-  const menu = document.createElement("div");
-  Object.assign(menu.style, {
-    position: "fixed", bottom: "75px", right: "15px", width: "200px", maxHeight: "250px",
-    background: "rgba(30,30,30,0.7)", backdropFilter: "blur(8px)", borderRadius: "12px",
-    padding: "10px", display: "none", overflowY: "auto", zIndex: 9998,
-    boxShadow: "0 0 8px rgba(0,0,0,0.5)", color: "#fff", fontFamily: "sans-serif"
-  });
-
-  menuBtn.onclick = () => {
-    menu.style.display = menu.style.display === "none" ? "block" : "none";
-  };
-
+  // Создаем кнопку меню
+  const menuBtn = document.createElement('div');
+  menuBtn.className = 'menu-toggle';
+  menuBtn.textContent = '≡';
   document.body.appendChild(menuBtn);
+
+  // Создаем само меню
+  const menu = document.createElement('div');
+  menu.className = 'mod-menu';
+  menu.style.display = 'none';
   document.body.appendChild(menu);
 
-  // Ball trajectory toggle
-  const trajectoryToggle = document.createElement("label");
-  trajectoryToggle.style.display = "flex";
-  trajectoryToggle.style.alignItems = "center";
-  trajectoryToggle.style.marginBottom = "10px";
-  trajectoryToggle.innerHTML = `
-    <span style="flex:1">Траектория мяча</span>
-    <input type="checkbox" id="showTrajectory"/>
-  `;
-  menu.appendChild(trajectoryToggle);
-
-  let drawTrajectory = false;
-  document.getElementById("showTrajectory").onchange = function () {
-    drawTrajectory = this.checked;
+  // Переключатель меню
+  menuBtn.onclick = () => {
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
   };
 
+  // Авто-удар
+  let autoKickEnabled = false;
+  let autoKickInterval;
+  const autoKickToggle = document.createElement('button');
+  autoKickToggle.textContent = 'Авто-удар: ВЫКЛ';
+  menu.appendChild(autoKickToggle);
+
+  autoKickToggle.onclick = () => {
+    autoKickEnabled = !autoKickEnabled;
+    autoKickToggle.textContent = `Авто-удар: ${autoKickEnabled ? 'ВКЛ' : 'ВКЛ'}`;
+    
+    if (autoKickEnabled) {
+      autoKickInterval = setInterval(() => {
+        if (window.game && game.ball) {
+          const player = game.players.find(p => p.id === game.myPlayerId);
+          if (player) {
+            const distance = Math.sqrt(
+              Math.pow(player.x - game.ball.x, 2) + 
+              Math.pow(player.y - game.ball.y, 2)
+            );
+            if (distance < 50) {
+              kick('keydown');
+              setTimeout(() => kick('keyup'), 100);
+            }
+          }
+        }
+      }, 100);
+    } else {
+      clearInterval(autoKickInterval);
+    }
+  };
+
+  // Траектория мяча
+  let drawTrajectory = false;
+  let trajectoryOpacity = 0.5;
+  const trajectoryToggle = document.createElement('button');
+  trajectoryToggle.textContent = 'Траектория мяча: ВЫКЛ';
+  menu.appendChild(trajectoryToggle);
+
+  const trajectoryOpacitySlider = document.createElement('div');
+  trajectoryOpacitySlider.innerHTML = `
+    <label>
+      Прозрачность:
+      <input type="range" min="0" max="1" step="0.1" value="${trajectoryOpacity}">
+      <span>${Math.round(trajectoryOpacity * 100)}%</span>
+    </label>
+  `;
+  menu.appendChild(trajectoryOpacitySlider);
+
+  trajectoryToggle.onclick = () => {
+    drawTrajectory = !drawTrajectory;
+    trajectoryToggle.textContent = `Траектория мяча: ${drawTrajectory ? 'ВКЛ' : 'ВЫКЛ'}`;
+  };
+
+  trajectoryOpacitySlider.querySelector('input').oninput = function() {
+    trajectoryOpacity = parseFloat(this.value);
+    this.nextElementSibling.textContent = `${Math.round(trajectoryOpacity * 100)}%`;
+  };
+
+  // Перехватываем рендер игры для отрисовки траектории
   const oldRender = window.render;
-  window.render = function () {
-    if (typeof oldRender === "function") oldRender();
+  window.render = function() {
+    if (typeof oldRender === 'function') oldRender();
 
     if (drawTrajectory && window.game && game.ball) {
       const ctx = document.querySelector("canvas")?.getContext("2d");
       if (!ctx) return;
+      
       const { x, y, xs, ys } = game.ball;
       ctx.beginPath();
-      ctx.strokeStyle = "lime";
+      ctx.strokeStyle = `rgba(0, 255, 0, ${trajectoryOpacity})`;
+      ctx.lineWidth = 2;
       ctx.setLineDash([5, 3]);
       ctx.moveTo(x, y);
-      ctx.lineTo(x + xs * 10, y + ys * 10);
+      ctx.lineTo(x + xs * 20, y + ys * 20);
       ctx.stroke();
       ctx.setLineDash([]);
     }
   };
 
-  const cameraLabel = document.createElement("label");
-  cameraLabel.style.display = "flex";
-  cameraLabel.style.alignItems = "center";
-  cameraLabel.style.marginBottom = "10px";
-  cameraLabel.innerHTML = `
-    <span style="flex:1">Смена камеры</span>
-    <input type="range" min="0.5" max="2" step="0.1" value="1" id="cameraZoom"/>
-  `;
-  menu.appendChild(cameraLabel);
-
-  const observer = new MutationObserver(() => {
-    if (window.HBInit && window.renderer) {
-      const camZoom = document.getElementById("cameraZoom");
-      if (!camZoom) return;
-      window.renderer.setScale && window.renderer.setScale(parseFloat(camZoom.value));
-      camZoom.oninput = () => {
-        window.renderer.setScale(parseFloat(camZoom.value));
-      };
-    }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
+  // Функция для удара
+  function kick(state) {
+    try {
+      document.querySelector('.gameframe').contentWindow.document.dispatchEvent(
+        new KeyboardEvent(state, { code: "KeyX" })
+      );
+    } catch {}
+  }
 })();
-
-(function() {
-    'use strict';
-
-    // Array of English alphabet letters
-    const avatars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    let currentIndex = 0; // Index to track the current avatar
-    let isAvatarChanging = false; // Flag to check if avatar changing is active
-
-    // Function to change the avatar
-    const changeAvatar = function(key) {
-        let inputHax = document.querySelector('.input input');
-        let buttonHax = document.querySelector('.input button');
-        inputHax.value = '/avatar ' + key;
-        buttonHax.click();
-        removeAvatarSet();
-    };
-
-    // Function to remove the "Avatar set" notice
-    const removeAvatarSet = function() {
-        let noticeList = document.querySelectorAll('div.log p.notice');
-        for (let i = 0; i < noticeList.length; i++) {
-            if (noticeList[i].innerText === 'Avatar set') {
-                noticeList[i].parentNode.removeChild(noticeList[i]);
-            }
-        }
-    };
-
-    // Function to cycle through avatars
-    const cycleAvatars = function() {
-        if (isAvatarChanging) {
-            changeAvatar(avatars[currentIndex]);
-            currentIndex = (currentIndex + 1) % avatars.length;
-        }
-    };
-
-    // Set an interval to change the avatar every 0.5 second
-    const avatarInterval = setInterval(cycleAvatars, 500);
-
-    // Function to toggle avatar changing on/off
-    const toggleAvatarChange = function(isEnabled) {
-        isAvatarChanging = isEnabled;
-        if (!isAvatarChanging) {
-            clearInterval(avatarInterval); // Stop the avatar change when disabled
-        } else {
-            setInterval(cycleAvatars, 500); // Restart avatar changing
-        }
-    };
-
-    // Add a switch to the mod menu
-    const createSwitchMenu = function() {
-        const menuContainer = document.createElement('div');
-        menuContainer.style.position = 'absolute';
-        menuContainer.style.top = '20px';
-        menuContainer.style.right = '20px';
-        menuContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        menuContainer.style.padding = '10px';
-        menuContainer.style.borderRadius = '10px';
-
-        const switchLabel = document.createElement('label');
-        switchLabel.textContent = 'Смена аватара:';
-        switchLabel.style.color = 'white';
-        menuContainer.appendChild(switchLabel);
-
-        const switchButton = document.createElement('input');
-        switchButton.type = 'checkbox';
-        switchButton.addEventListener('change', (e) => toggleAvatarChange(e.target.checked));
-        menuContainer.appendChild(switchButton);
-
-        document.body.appendChild(menuContainer);
-    };
-
-    // Create the switch menu
-    createSwitchMenu();
-
-})();
+    
 
 (function () {
   const overlay = document.createElement("div");
