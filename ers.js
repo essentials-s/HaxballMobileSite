@@ -1,200 +1,83 @@
 (function () {
-  const toggleBtn = document.createElement("button");
-  toggleBtn.textContent = "≡";
-  Object.assign(toggleBtn.style, {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    zIndex: "9999",
-    width: "40px",
-    height: "40px",
-    fontSize: "20px",
-    borderRadius: "50%",
-    backgroundColor: "#333",
-    color: "#fff",
-    border: "none",
-    cursor: "pointer"
+  const menuBtn = document.createElement("button");
+  Object.assign(menuBtn.style, {
+    position: "fixed", bottom: "15px", right: "15px", width: "48px", height: "48px",
+    background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", borderRadius: "50%",
+    border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: "20px",
+    zIndex: 9999, cursor: "pointer"
   });
+  menuBtn.textContent = "≡";
 
   const menu = document.createElement("div");
   Object.assign(menu.style, {
-    position: "fixed",
-    bottom: "70px",
-    right: "20px",
-    width: "180px",
-    backgroundColor: "#222",
-    color: "#fff",
-    borderRadius: "10px",
-    padding: "8px",
-    display: "none",
-    zIndex: "9999",
-    fontSize: "14px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
-    userSelect: "none"
+    position: "fixed", bottom: "75px", right: "15px", width: "200px", maxHeight: "250px",
+    background: "rgba(30,30,30,0.7)", backdropFilter: "blur(8px)", borderRadius: "12px",
+    padding: "10px", display: "none", overflowY: "auto", zIndex: 9998,
+    boxShadow: "0 0 8px rgba(0,0,0,0.5)", color: "#fff", fontFamily: "sans-serif"
   });
 
-  // Моды с настоящими действиями
-  const mods = [
-    {
-      name: "Показ FPS",
-      onToggle: (on) => {
-        let fpsDiv = document.getElementById("fps-counter");
-        if (on) {
-          if (!fpsDiv) {
-            fpsDiv = document.createElement("div");
-            fpsDiv.id = "fps-counter";
-            Object.assign(fpsDiv.style, {
-              position: "fixed",
-              bottom: "5px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              color: "#0f0",
-              fontSize: "14px",
-              fontFamily: "monospace",
-              zIndex: "9999"
-            });
-            document.body.appendChild(fpsDiv);
-            let last = performance.now(), frames = 0;
-            fpsDiv._interval = setInterval(() => {
-              const now = performance.now();
-              frames++;
-              if (now - last >= 1000) {
-                fpsDiv.textContent = `FPS: ${frames}`;
-                frames = 0;
-                last = now;
-              }
-            }, 100);
-          }
-        } else {
-          if (fpsDiv) {
-            clearInterval(fpsDiv._interval);
-            fpsDiv.remove();
-          }
-        }
-      }
-    },
-    {
-      name: "Тёмная тема",
-      onToggle: (on) => {
-        document.body.style.background = on ? "#111" : "#fff";
-        document.body.style.color = on ? "#ccc" : "#000";
-      }
-    },
-    {
-      name: "Скрыть мяч",
-      onToggle: (on) => {
-        const ball = document.querySelector("canvas");
-        if (ball) ball.style.filter = on ? "brightness(0%)" : "";
-      }
-    },
-    {
-      name: "HUD Ping",
-      onToggle: (on) => {
-        let ping = document.getElementById("ping-hud");
-        if (on) {
-          if (!ping) {
-            ping = document.createElement("div");
-            ping.id = "ping-hud";
-            Object.assign(ping.style, {
-              position: "fixed",
-              bottom: "25px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              color: "#0ff",
-              fontSize: "14px",
-              fontFamily: "monospace",
-              zIndex: "9999"
-            });
-            document.body.appendChild(ping);
-            ping._interval = setInterval(() => {
-              const rtt = window?.HBInit?.() ? window.HBInit().ping : Math.floor(Math.random() * 100); // Фейк, если пинга нет
-              ping.textContent = `Ping: ${rtt}ms`;
-            }, 1000);
-          }
-        } else {
-          if (ping) {
-            clearInterval(ping._interval);
-            ping.remove();
-          }
-        }
-      }
-    }
-  ];
-
-  // UI со Switch'ами
-  mods.forEach(mod => {
-    const row = document.createElement("div");
-    row.style.display = "flex";
-    row.style.alignItems = "center";
-    row.style.justifyContent = "space-between";
-    row.style.marginBottom = "6px";
-
-    const label = document.createElement("span");
-    label.textContent = mod.name;
-    row.appendChild(label);
-
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.style.transform = "scale(1.2)";
-    input.onchange = () => mod.onToggle(input.checked);
-    row.appendChild(input);
-
-    menu.appendChild(row);
-  });
-
-  // Перемещение по краям
-  let isDragging = false, offsetX, offsetY;
-  menu.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    offsetX = e.clientX - menu.getBoundingClientRect().left;
-    offsetY = e.clientY - menu.getBoundingClientRect().top;
-  });
-  document.addEventListener("mouseup", () => isDragging = false);
-  document.addEventListener("mousemove", (e) => {
-    if (isDragging) {
-      const edge = 10;
-      const x = e.clientX - offsetX;
-      const y = e.clientY - offsetY;
-      if (x < edge) {
-        menu.style.left = "10px";
-        menu.style.right = "";
-      } else if (x > window.innerWidth - menu.offsetWidth - edge) {
-        menu.style.right = "10px";
-        menu.style.left = "";
-      }
-      if (y < edge) {
-        menu.style.top = "10px";
-        menu.style.bottom = "";
-      } else if (y > window.innerHeight - menu.offsetHeight - edge) {
-        menu.style.bottom = "10px";
-        menu.style.top = "";
-      }
-    }
-  });
-
-  toggleBtn.onclick = () => {
-    menu.style.display = (menu.style.display === "none") ? "block" : "none";
+  menuBtn.onclick = () => {
+    menu.style.display = menu.style.display === "none" ? "block" : "none";
   };
 
-  document.body.appendChild(toggleBtn);
+  document.body.appendChild(menuBtn);
   document.body.appendChild(menu);
-})();
+
+  // Ball trajectory toggle
+  const trajectoryToggle = document.createElement("label");
+  trajectoryToggle.style.display = "flex";
+  trajectoryToggle.style.alignItems = "center";
+  trajectoryToggle.style.marginBottom = "10px";
+  trajectoryToggle.innerHTML = `
+    <span style="flex:1">Траектория мяча</span>
+    <input type="checkbox" id="showTrajectory"/>
+  `;
+  menu.appendChild(trajectoryToggle);
+
+  let drawTrajectory = false;
+  document.getElementById("showTrajectory").onchange = function () {
+    drawTrajectory = this.checked;
+  };
+
+  const oldRender = window.render;
+  window.render = function () {
+    if (typeof oldRender === "function") oldRender();
+
+    if (drawTrajectory && window.game && game.ball) {
+      const ctx = document.querySelector("canvas")?.getContext("2d");
+      if (!ctx) return;
+      const { x, y, xs, ys } = game.ball;
+      ctx.beginPath();
+      ctx.strokeStyle = "lime";
+      ctx.setLineDash([5, 3]);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + xs * 10, y + ys * 10);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  };
+
+  const cameraLabel = document.createElement("label");
+  cameraLabel.style.display = "flex";
+  cameraLabel.style.alignItems = "center";
+  cameraLabel.style.marginBottom = "10px";
+  cameraLabel.innerHTML = `
+    <span style="flex:1">Смена камеры</span>
+    <input type="range" min="0.5" max="2" step="0.1" value="1" id="cameraZoom"/>
+  `;
+  menu.appendChild(cameraLabel);
 
   const observer = new MutationObserver(() => {
-    document.querySelectorAll("*").forEach(el => {
-      if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
-        const txt = el.textContent.trim();
-        if (translations[txt]) {
-          el.textContent = translations[txt];
-        }
-      }
-    });
+    if (window.HBInit && window.renderer) {
+      const camZoom = document.getElementById("cameraZoom");
+      if (!camZoom) return;
+      window.renderer.setScale && window.renderer.setScale(parseFloat(camZoom.value));
+      camZoom.oninput = () => {
+        window.renderer.setScale(parseFloat(camZoom.value));
+      };
+    }
   });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
+  observer.observe(document.body, { childList: true, subtree: true });
 })();
 
 (function () {
