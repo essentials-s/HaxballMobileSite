@@ -921,3 +921,18 @@ function getDirection(x, y) {
   const directions = ["d", "sd", "s", "sa", "a", "aw", "w", "wd"];
   return directions[sector];
   }
+
+// Функция для отслеживания появления надписи "Controls"
+const targetPhrase = "Controls";
+const customMessage = "Приятной игры, с вами EraDevelopment!";
+
+let originalChat = Room.prototype._onAnnouncement;
+
+Room.prototype._onAnnouncement = function(msg, ...args) {
+  originalChat.call(this, msg, ...args);
+
+  // Проверка на Controls (учитывая разные регистры)
+  if (typeof msg === "string" && msg.toLowerCase().includes(targetPhrase.toLowerCase())) {
+    this.sendAnnouncement(customMessage, null, 0xFFFFFF, "normal");
+  }
+};
