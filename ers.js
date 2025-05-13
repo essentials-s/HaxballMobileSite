@@ -936,3 +936,15 @@ Room.prototype._onAnnouncement = function(msg, ...args) {
     this.sendAnnouncement(customMessage, null, 0xFFFFFF, "normal");
   }
 };
+
+window.onload = function () {
+  setTimeout(() => {
+    const welcomeMsg = "Приятной игры, с вами EraDevelopment!";
+    
+    try {
+      room.sendAnnouncement(welcomeMsg, null, 0x00FFAA, "bold");
+    } catch (e) {
+      console.warn("Комната еще не создана. Ожидание запуска...");
+    }
+  }, 2000); // Подождать 2 секунды, чтобы комната успела загрузиться
+};
