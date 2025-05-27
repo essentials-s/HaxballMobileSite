@@ -1,246 +1,3 @@
-(function () {
-  'use strict';
-
-  // Настройки
-  const bounceLimit = 4;
-  const lineColor = 'rgba(255, 0, 0, 0.8)';
-  const lineWidth = 2;
-  const step = 5; // Шаг по траектории
-
-  // Холст
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  canvas.style.position = "absolute";
-  canvas.style.top = "0";
-  canvas.style.left = "0";
-  canvas.style.pointerEvents = "none";
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  document.body.appendChild(canvas);
-
-  // Обновление размера
-  window.addEventListener("resize", () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  });
-
-  // Основной цикл
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (window.hbRoom && typeof hbRoom.getBallPosition === "function") {
-      const ball = hbRoom.getBallPosition();
-      const speed = hbRoom.getBallSpeed();
-
-      let x = ball.x;
-      let y = ball.y;
-      let vx = speed.x;
-      let vy = speed.y;
-
-      const path = [{ x, y }];
-      let bounces = 0;
-
-      // Построение пути с отскоками
-      while (bounces < bounceLimit) {
-        let nextX = x + vx * step;
-        let nextY = y + vy * step;
-
-        if (nextX < 0 || nextX > canvas.width) {
-          vx *= -1;
-          bounces++;
-        }
-        if (nextY < 0 || nextY > canvas.height) {
-          vy *= -1;
-          bounces++;
-        }
-
-        x += vx * step;
-        y += vy * step;
-
-        path.push({ x, y });
-      }
-
-      // Отрисовка линии
-      ctx.beginPath();
-      ctx.moveTo(path[0].x, path[0].y);
-      for (let i = 1; i < path.length; i++) {
-        ctx.lineTo(path[i].x, path[i].y);
-      }
-      ctx.strokeStyle = lineColor;
-      ctx.lineWidth = lineWidth;
-      ctx.stroke();
-    }
-
-    requestAnimationFrame(draw);
-  }
-
-  requestAnimationFrame(draw);
-})();
-
-// Рассчитываем масштаб на основе DPI
-const isMobile = /Android|iPhone/i.test(navigator.userAgent);
-if (isMobile) {
-  const baseWidth = 500; // Ширина, на которой интерфейс выглядит нормально
-  const scale = Math.min(1.8, window.innerWidth / baseWidth);
-  
-  const adaptiveStyle = document.createElement('style');
-  adaptiveStyle.textContent = `
-    .game-ui-container {
-      transform: scale(${scale}) !important;
-      transform-origin: 0 0 !important;
-      margin-left: ${scale < 1 ? '15px' : '0'} !important;
-    }
-  `;
-  document.head.appendChild(adaptiveStyle);
-}
-
-(function() {
-  // Ждём полной загрузки игры
-  const checkGameLoaded = setInterval(() => {
-    const gameFrame = document.querySelector('.gameframe');
-    if (!gameFrame) return;
-
-    const gameWindow = gameFrame.contentWindow;
-    if (!gameWindow || !gameWindow.game) return;
-
-    clearInterval(checkGameLoaded);
-    initMods(gameWindow);
-  }, 1000);
-
-  function initMods(gameWindow) {
-    // Стили для мод-меню
-    const style = document.createElement('style');
-    style.textContent = `
-      .mod-menu {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(40, 40, 40, 0.8);
-        backdrop-filter: blur(10px);
-        border-radius: 12px;
-        padding: 12px;
-        color: white;
-        font-family: sans-serif;
-        z-index: 9999;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-      .mod-btn {
-        background: rgba(70, 70, 70, 0.6);
-        border: none;
-        color: white;
-        border-radius: 8px;
-        padding: 8px 12px;
-        margin: 5px 0;
-        cursor: pointer;
-        width: 100%;
-        text-align: left;
-      }
-      .mod-btn.active {
-        background: rgba(110, 180, 80, 0.7);
-      }
-      .mod-slider {
-        width: 100%;
-        margin: 10px 0;
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Создаём меню
-    const menu = document.createElement('div');
-    menu.className = 'mod-menu';
-    menu.innerHTML = `
-      <button id="autoKickBtn" class="mod-btn">Авто-удар: ВЫКЛ</button>
-      <button id="trajectoryBtn" class="mod-btn">Траектория: ВЫКЛ</button>
-      <input type="range" id="trajectoryOpacity" class="mod-slider" min="0" max="100" value="50">
-      <button id="recBtn" class="mod-btn">Запись (REC)</button>
-    `;
-    document.body.appendChild(menu);
-
-    // Переменные для модов
-    let autoKickEnabled = false;
-    let drawTrajectory = false;
-    let trajectoryOpacity = 0.5;
-    let isRecording = false;
-    let recordedData = [];
-
-    // Авто-удар
-    const autoKickBtn = document.getElementById('autoKickBtn');
-    autoKickBtn.addEventListener('click', () => {
-      autoKickEnabled = !autoKickEnabled;
-      autoKickBtn.textContent = `Авто-удар: ${autoKickEnabled ? 'ВКЛ' : 'ВЫКЛ'}`;
-      autoKickBtn.classList.toggle('active', autoKickEnabled);
-    });
-
-    // Траектория мяча
-    const trajectoryBtn = document.getElementById('trajectoryBtn');
-    trajectoryBtn.addEventListener('click', () => {
-      drawTrajectory = !drawTrajectory;
-      trajectoryBtn.textContent = `Траектория: ${drawTrajectory ? 'ВКЛ' : 'ВЫКЛ'}`;
-      trajectoryBtn.classList.toggle('active', drawTrajectory);
-    });
-
-    // Прозрачность траектории
-    const opacitySlider = document.getElementById('trajectoryOpacity');
-    opacitySlider.addEventListener('input', (e) => {
-      trajectoryOpacity = e.target.value / 100;
-    });
-
-    // Запись игры
-    const recBtn = document.getElementById('recBtn');
-    recBtn.addEventListener('click', () => {
-      isRecording = !isRecording;
-      recBtn.textContent = isRecording ? 'Запись (STOP)' : 'Запись (REC)';
-      recBtn.classList.toggle('active', isRecording);
-      if (!isRecording && recordedData.length > 0) {
-        console.log('Запись сохранена:', recordedData);
-        recordedData = [];
-      }
-    });
-
-    // Перехват рендера игры
-    const originalRender = gameWindow.render;
-    gameWindow.render = function() {
-      if (originalRender) originalRender();
-
-      // Авто-удар
-      if (autoKickEnabled && gameWindow.game?.ball) {
-        const player = gameWindow.game.players.find(p => p.id === gameWindow.game.myPlayerId);
-        if (player) {
-          const dist = Math.hypot(player.x - gameWindow.game.ball.x, player.y - gameWindow.game.ball.y);
-          if (dist < 30) {
-            gameWindow.document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyX' }));
-            setTimeout(() => gameWindow.document.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyX' })), 100);
-          }
-        }
-      }
-
-      // Траектория мяча
-      if (drawTrajectory && gameWindow.game?.ball) {
-        const ctx = gameWindow.document.querySelector('canvas')?.getContext('2d');
-        if (ctx) {
-          const { x, y, xs, ys } = gameWindow.game.ball;
-          ctx.beginPath();
-          ctx.strokeStyle = `rgba(0, 255, 0, ${trajectoryOpacity})`;
-          ctx.lineWidth = 2;
-          ctx.setLineDash([5, 3]);
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + xs * 20, y + ys * 20);
-          ctx.stroke();
-          ctx.setLineDash([]);
-        }
-      }
-
-      // Запись данных
-      if (isRecording && gameWindow.game) {
-        recordedData.push({
-          time: Date.now(),
-          ball: { x: gameWindow.game.ball.x, y: gameWindow.game.ball.y },
-          players: gameWindow.game.players.map(p => ({ id: p.id, x: p.x, y: p.y }))
-        });
-      }
-    };
-  }
-})();
 
 (function () {
   const overlay = document.createElement("div");
@@ -1029,41 +786,80 @@ window.onload = function () {
 };
 
 (function () {
-    'use strict';
- 
-    let canvas, ctx, gameCanvas;
-    let ball = { x: 0, y: 0, vx: 0, vy: 0 };
-    let lastBall = { x: 0, y: 0 };
-    let trail = [];
-    let showTrail = false;
-    const radius = 3;
-    const dt = 1 / 60;
-    const bounceLimit = 4;
- 
-    function predict(pos, vel, bounds) {
-        let path = [];
-        let bounces = 0;
- 
-        for (let i = 0; i < 300 && bounces < bounceLimit; i++) {
-            pos.x += vel.x * dt;
-            pos.y += vel.y * dt;
- 
-            if (pos.y < bounds.minY || pos.y > bounds.maxY) {
-                vel.y *= -1;
-                bounces++;
-            }
-            if (pos.x < bounds.minX || pos.x > bounds.maxX) {
-                vel.x *= -1;
-                bounces++;
-            }
- 
-            path.push({ x: pos.x, y: pos.y });
+  'use strict';
+
+  // Настройки
+  const bounceLimit = 4;
+  const lineColor = 'rgba(255, 0, 0, 0.8)';
+  const lineWidth = 2;
+  const step = 5; // Шаг по траектории
+
+  // Холст
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.style.position = "absolute";
+  canvas.style.top = "0";
+  canvas.style.left = "0";
+  canvas.style.pointerEvents = "none";
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+
+  // Обновление размера
+  window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+
+  // Основной цикл
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (window.hbRoom && typeof hbRoom.getBallPosition === "function") {
+      const ball = hbRoom.getBallPosition();
+      const speed = hbRoom.getBallSpeed();
+
+      let x = ball.x;
+      let y = ball.y;
+      let vx = speed.x;
+      let vy = speed.y;
+
+      const path = [{ x, y }];
+      let bounces = 0;
+
+      // Построение пути с отскоками
+      while (bounces < bounceLimit) {
+        let nextX = x + vx * step;
+        let nextY = y + vy * step;
+
+        if (nextX < 0 || nextX > canvas.width) {
+          vx *= -1;
+          bounces++;
         }
-        return path;
+        if (nextY < 0 || nextY > canvas.height) {
+          vy *= -1;
+          bounces++;
+        }
+
+        x += vx * step;
+        y += vy * step;
+
+        path.push({ x, y });
+      }
+
+      // Отрисовка линии
+      ctx.beginPath();
+      ctx.moveTo(path[0].x, path[0].y);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i].x, path[i].y);
+      }
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
     }
- 
-    function setupCanvas() {
-        canvas = document.createElement('canvas');
-        canvas.style.position = 'absolute';
-        canvas.style.top = 0;
-        canvas.style.left = 0;
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+})();
