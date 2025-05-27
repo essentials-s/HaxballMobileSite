@@ -863,3 +863,251 @@ window.onload = function () {
 
   requestAnimationFrame(draw);
 })();
+
+// Haxball Ball Trajectory Predictor
+// Показывает траекторию мяча с отскоками и на большом расстоянии
+
+(function() {
+    'use strict';
+    
+    let room = HBInit({
+        roomName: "Trajectory Room",
+        maxPlayers: 16,
+        public: false,
+        noPlayer: true
+    });
+    
+    // Переменные для траектории
+    let trajectoryPoints = [];
+    let canvas, ctx;
+    let lastBallPosition = null;
+    let lastBallVelocity = { x: 0, y: 0 };
+    
+    // Параметры физики Haxball
+    const DAMPING = 0.99; // Затухание скорости
+    const GRAVITY = 0; // В Haxball нет гравитации
+    const BOUNCE_DAMPING = 0.8; // Потеря энергии при отскоке
+    const MIN_VELOCITY = 0.1; // Минимальная скорость для расчета
+    
+    // Создание canvas для отрисовки траектории
+    function createTrajectoryCanvas() {
+        canvas = document.createElement('canvas');
+        canvas.id = 'trajectoryCanvas';
+        canvas.style.position = 'absolute';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '1000';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        document.body.appendChild(canvas);
+        ctx = canvas.getContext('2d');
+    }
+    
+    // Получение границ поля
+    function getStadiumBounds() {
+        const stadium = room.getDiscProperties(0); // Мяч всегда имеет ID 0
+        return {
+            left: -370,   // Примерные границы стандартного поля
+            right: 370,
+            top: -170,
+            bottom: 170
+        };
+    }
+    
+    // Предсказание траектории с отскоками
+    function predictTrajectory(startPos, startVel, steps = 200) {
+        let points = [];
+        let pos = { x: startPos.x, y: startPos.y };
+        let vel = { x: startVel.x, y: startVel.y };
+        
+        const bounds = getStadiumBounds();
+        
+        for (let i = 0; i < steps; i++) {
+            // Добавляем текущую позицию
+            points.push({ x: pos.x, y: pos.y });
+            
+            // Обновляем позицию
+            pos.x += vel.x;
+            pos.y += vel.y;
+            
+            // Применяем затухание
+            vel.x *= DAMPING;
+            vel.y *= DAMPING;
+            
+            // Проверяем отскоки от границ
+            if (pos.x <= bounds.left || pos.x >= bounds.right) {
+                vel.x = -vel.x * BOUNCE_DAMPING;
+                pos.x = pos.x <= bounds.left ? bounds.left : bounds.right;
+            }
+            
+            if (pos.y <= bounds.top || pos.y >= bounds.bottom) {
+                vel.y = -vel.y * BOUNCE_DAMPING;
+                pos.y = pos.y <= bounds.top ? bounds.top : bounds.bottom;
+            }
+            
+            // Прекращаем расчет если скорость слишком мала
+            if (Math.abs(vel.x) < MIN_VELOCITY && Math.abs(vel.y) < MIN_VELOCITY) {
+                points.push({ x: pos.x, y: pos.y });
+                break;
+            }
+        }
+        
+        return points;
+    }
+    
+    // Конвертация координат поля в координаты экрана
+    function fieldToScreen(fieldPos) {
+        const gameCanvas = document.querySelector('canvas');
+        if (!gameCanvas) return { x: 0, y: 0 };
+        
+        const rect = gameCanvas.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        // Масштабирование (примерное)
+        const scale = Math.min(rect.width / 800, rect.height / 400);
+        
+        return {
+            x: centerX + fieldPos.x * scale,
+            y: centerY + fieldPos.y * scale
+        };
+    }
+    
+    // Отрисовка траектории
+    function drawTrajectory() {
+        if (!ctx || !canvas) return;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (trajectoryPoints.length < 2) return;
+        
+        ctx.strokeStyle = '#00FF00';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        
+        ctx.beginPath();
+        
+        for (let i = 0; i < trajectoryPoints.length - 1; i++) {
+            const screenPos1 = fieldToScreen(trajectoryPoints[i]);
+            const screenPos2 = fieldToScreen(trajectoryPoints[i + 1]);
+            
+            if (i === 0) {
+                ctx.moveTo(screenPos1.x, screenPos1.y);
+            }
+            ctx.lineTo(screenPos2.x, screenPos2.y);
+            
+            // Делаем линию более прозрачной с расстоянием
+            const alpha = Math.max(0.1, 1 - (i / trajectoryPoints.length));
+            ctx.globalAlpha = alpha;
+        }
+        
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        
+        // Отмечаем точки отскоков
+        ctx.fillStyle = '#FF4444';
+        for (let i = 1; i < trajectoryPoints.length - 1; i++) {
+            const prev = trajectoryPoints[i - 1];
+            const curr = trajectoryPoints[i];
+            const next = trajectoryPoints[i + 1];
+            
+            // Определяем отскок по резкому изменению направления
+            const angle1 = Math.atan2(curr.y - prev.y, curr.x - prev.x);
+            const angle2 = Math.atan2(next.y - curr.y, next.x - curr.x);
+            const angleDiff = Math.abs(angle1 - angle2);
+            
+            if (angleDiff > Math.PI / 4) { // Если угол изменился больше чем на 45 градусов
+                const screenPos = fieldToScreen(curr);
+                ctx.beginPath();
+                ctx.arc(screenPos.x, screenPos.y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+    }
+    
+    // Обновление траектории
+    function updateTrajectory() {
+        const ballPos = room.getBallPosition();
+        
+        if (!ballPos || !lastBallPosition) {
+            lastBallPosition = ballPos;
+            return;
+        }
+        
+        // Вычисляем скорость мяча
+        const velocity = {
+            x: ballPos.x - lastBallPosition.x,
+            y: ballPos.y - lastBallPosition.y
+        };
+        
+        // Сглаживаем скорость
+        lastBallVelocity.x = lastBallVelocity.x * 0.7 + velocity.x * 0.3;
+        lastBallVelocity.y = lastBallVelocity.y * 0.7 + velocity.y * 0.3;
+        
+        // Предсказываем траекторию только если мяч движется
+        const speed = Math.sqrt(lastBallVelocity.x ** 2 + lastBallVelocity.y ** 2);
+        if (speed > MIN_VELOCITY) {
+            trajectoryPoints = predictTrajectory(ballPos, lastBallVelocity);
+        } else {
+            trajectoryPoints = [];
+        }
+        
+        lastBallPosition = ballPos;
+        drawTrajectory();
+    }
+    
+    // Обработчики событий
+    room.onRoomLink = function(url) {
+        console.log("Room URL: " + url);
+    };
+    
+    room.onGameTick = function() {
+        updateTrajectory();
+    };
+    
+    room.onPlayerJoin = function(player) {
+        room.sendAnnouncement("🎯 Ball Trajectory Predictor активирован!", player.id, 0x00FF00);
+    };
+    
+    // Команды
+    room.onPlayerChat = function(player, message) {
+        if (message === "!trajectory") {
+            room.sendAnnouncement("🎯 Траектория мяча " + (trajectoryPoints.length > 0 ? "показывается" : "скрыта"), player.id);
+            return false;
+        }
+        
+        if (message === "!help") {
+            room.sendAnnouncement("Команды: !trajectory - информация о траектории", player.id, 0x00FFFF);
+            return false;
+        }
+    };
+    
+    // Инициализация
+    function init() {
+        createTrajectoryCanvas();
+        
+        // Обновление размеров canvas при изменении окна
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        console.log("🎯 Haxball Ball Trajectory Predictor запущен!");
+    }
+    
+    // Если мы уже в игре, инициализируемся сразу
+    if (typeof HBInit !== 'undefined') {
+        init();
+    } else {
+        // Ждем загрузки Haxball API
+        const checkHaxball = setInterval(function() {
+            if (typeof HBInit !== 'undefined') {
+                clearInterval(checkHaxball);
+                init();
+            }
+        }, 100);
+    }
+    
+})();
