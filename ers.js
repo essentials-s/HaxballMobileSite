@@ -1,3 +1,82 @@
+(function () {
+  'use strict';
+
+  // Настройки
+  const bounceLimit = 4;
+  const lineColor = 'rgba(255, 0, 0, 0.8)';
+  const lineWidth = 2;
+  const step = 5; // Шаг по траектории
+
+  // Холст
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.style.position = "absolute";
+  canvas.style.top = "0";
+  canvas.style.left = "0";
+  canvas.style.pointerEvents = "none";
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+
+  // Обновление размера
+  window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+
+  // Основной цикл
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (window.hbRoom && typeof hbRoom.getBallPosition === "function") {
+      const ball = hbRoom.getBallPosition();
+      const speed = hbRoom.getBallSpeed();
+
+      let x = ball.x;
+      let y = ball.y;
+      let vx = speed.x;
+      let vy = speed.y;
+
+      const path = [{ x, y }];
+      let bounces = 0;
+
+      // Построение пути с отскоками
+      while (bounces < bounceLimit) {
+        let nextX = x + vx * step;
+        let nextY = y + vy * step;
+
+        if (nextX < 0 || nextX > canvas.width) {
+          vx *= -1;
+          bounces++;
+        }
+        if (nextY < 0 || nextY > canvas.height) {
+          vy *= -1;
+          bounces++;
+        }
+
+        x += vx * step;
+        y += vy * step;
+
+        path.push({ x, y });
+      }
+
+      // Отрисовка линии
+      ctx.beginPath();
+      ctx.moveTo(path[0].x, path[0].y);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i].x, path[i].y);
+      }
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+})();
+
 // Рассчитываем масштаб на основе DPI
 const isMobile = /Android|iPhone/i.test(navigator.userAgent);
 if (isMobile) {
