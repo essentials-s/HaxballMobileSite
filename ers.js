@@ -948,3 +948,43 @@ window.onload = function () {
     }
   }, 2000); // Подождать 2 секунды, чтобы комната успела загрузиться
 };
+
+(function () {
+    'use strict';
+ 
+    let canvas, ctx, gameCanvas;
+    let ball = { x: 0, y: 0, vx: 0, vy: 0 };
+    let lastBall = { x: 0, y: 0 };
+    let trail = [];
+    let showTrail = false;
+    const radius = 3;
+    const dt = 1 / 60;
+    const bounceLimit = 4;
+ 
+    function predict(pos, vel, bounds) {
+        let path = [];
+        let bounces = 0;
+ 
+        for (let i = 0; i < 300 && bounces < bounceLimit; i++) {
+            pos.x += vel.x * dt;
+            pos.y += vel.y * dt;
+ 
+            if (pos.y < bounds.minY || pos.y > bounds.maxY) {
+                vel.y *= -1;
+                bounces++;
+            }
+            if (pos.x < bounds.minX || pos.x > bounds.maxX) {
+                vel.x *= -1;
+                bounces++;
+            }
+ 
+            path.push({ x: pos.x, y: pos.y });
+        }
+        return path;
+    }
+ 
+    function setupCanvas() {
+        canvas = document.createElement('canvas');
+        canvas.style.position = 'absolute';
+        canvas.style.top = 0;
+        canvas.style.left = 0;
