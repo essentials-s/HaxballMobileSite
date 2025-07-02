@@ -1118,6 +1118,8 @@ window.onload = function () {
     if (typeof HBInit !== 'undefined') {
         init();
     } else {
+
+      
         // Ждем загрузки Haxball API
         const checkHaxball = setInterval(function() {
             if (typeof HBInit !== 'undefined') {
@@ -1128,3 +1130,21 @@ window.onload = function () {
     }
     
 })();
+
+window.addEventListener('load', function () {
+  const opMode = 'enhanced';
+
+  function enhanceMovement() {
+    return 'unpredictable';
+  }
+
+  console.log('[MOD] AI Ball Control активирован, режим:', opMode);
+
+  const interval = setInterval(() => {
+    const room = window.HBInit ? window.room : null;
+    if (!room) return;
+
+    // Пример - логика на месте, где можно расширить под реальную игру
+    // Здесь можно добавлять поведение игрока или мода
+  }, 1000);
+});
