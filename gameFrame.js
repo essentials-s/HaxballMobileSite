@@ -253,16 +253,16 @@ function moveStick(e) {
     if (distance > 30) {
         if (angle > 0 - offset && angle < 0 + offset) {
             //Right
-            chatSelectedMessage[0] = "GG!"
+            chatSelectedMessage[0] = "нападай"
         } else if (angle > 90 - offset && angle < 90 + offset) {
             //Up
-            chatSelectedMessage[0] = "Defending"
+            chatSelectedMessage[0] = "в защиту"
         } else if (angle > (-90) - offset && angle < (-90) + offset) {
             //Down
-            chatSelectedMessage[0] = "Pass to me!"
+            chatSelectedMessage[0] = "пасуй мне"
         } else if (angle < (-180) + offset || angle > 180 - offset) {
             //Left
-            chatSelectedMessage[0] = "Teamwork!"
+            chatSelectedMessage[0] = "лучший"
         }
         chatSelectedMessage[1] = distance
     }
