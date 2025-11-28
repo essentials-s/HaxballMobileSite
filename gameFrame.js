@@ -1124,117 +1124,360 @@ if (typeof VIRTUAL_JOYSTICK !== 'undefined') {
     }
   }
 
-// ======================================== INJECTHOR MINI 2026 — 100% РАБОТАЕТ ========================================
-setTimeout(() => {
-    if (document.getElementById('mini-vixel')) return;
+// =======================================================
+// === 1. КОНФИГУРАЦИЯ И СТИЛИ КРАСНОГО МОД-МЕНЮ ===
+// =======================================================
 
-    let fakeAllPing = null;
-    let ballTrailOn = true;
-    let bubbleOn = true;
+let isMenuOpen = false;
+let isBallDirectionActive = false; // Состояние прицеливания мяча
+let isAutoClickerActive = false;  // Состояние автокликера
+let autoClickerInterval = null;   // Переменная для хранения ID интервала автокликера
+
+// CSS для нового меню: компактное, красное, полупрозрачное
+const MOD_MENU_CSS = `
+    /* Общие стили для Mod Menu */
+    #haxball-mod-menu {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 250px; /* Компактная ширина */
+        background-color: rgba(189, 39, 39, 0.9); /* Красный и полупрозрачный */
+        color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 10000;
+        font-family: Arial, sans-serif;
+        display: none; /* По умолчанию скрыто */
+        padding: 10px;
+        cursor: grab; /* Курсор для перетаскивания */
+    }
+    #haxball-menu-header {
+        padding: 5px;
+        text-align: center;
+        font-weight: bold;
+        cursor: grab;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        margin-bottom: 10px;
+    }
+    .mod-menu-toggle-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: #fff;
+        padding: 8px 12px;
+        margin: 5px 0;
+        width: 100%;
+        text-align: left;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .mod-menu-toggle-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Стили для Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #4CAF50; /* Зеленый при ON */
+    }
+    input:checked + .slider:before {
+      transform: translateX(14px);
+    }
+    
+    /* Стили для прицела */
+    #ball-direction-line {
+        position: absolute;
+        width: 5px; /* Ширина линии */
+        background-color: rgba(255, 255, 255, 0.5); /* Белый и полупрозрачный */
+        pointer-events: none; /* Линия не должна мешать кликам */
+        transform-origin: top center; /* Точка вращения */
+        display: none; /* Скрыто, пока не активно */
+        z-index: 9999;
+    }
+`;
+
+// Добавляем стили в главный документ (не в iframe)
+document.head.appendChild(Object.assign(document.createElement('style'), { innerHTML: MOD_MENU_CSS }));
+
+
+// =======================================================
+// === 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (ЛОГИКА МЕНЮ) ===
+// =======================================================
+
+/**
+ * Переключает отображение индикатора направления мяча.
+ * ТРЕБУЕТ ФУНКЦИЙ: startBallDirectionDemo() и stopBallDirectionDemo()
+ */
+function toggleBallDirection() {
+    isBallDirectionActive = !isBallDirectionActive;
+    const btn = document.querySelector('[data-action="toggle-ball-direction"]');
+    if (btn) {
+        // Обновляем текст кнопки
+        btn.querySelector('span').textContent = isBallDirectionActive ? 'ON' : 'OFF';
+    }
+
+    if (isBallDirectionActive) {
+        // Здесь должна быть логика запуска прицела
+        if (typeof startBallDirectionDemo === 'function') {
+            startBallDirectionDemo();
+        } else {
+            console.warn("Внимание: Функция startBallDirectionDemo не найдена. Прицел не запущен.");
+        }
+    } else {
+        // Здесь должна быть логика остановки прицела
+        if (typeof stopBallDirectionDemo === 'function') {
+            stopBallDirectionDemo();
+        }
+    }
+}
+
+/**
+ * Переключает режим автокликера (автоматический удар).
+ * ТРЕБУЕТ ФУНКЦИИ: emulateKey(code, isDown)
+ */
+function toggleAutoClicker() {
+    isAutoClickerActive = !isAutoClickerActive;
+    const btn = document.querySelector('[data-action="toggle-autoclicker"]');
+    if (btn) {
+        btn.querySelector('span').textContent = isAutoClickerActive ? 'ON' : 'OFF';
+    }
+
+    if (isAutoClickerActive) {
+        // Запускаем автоматический "удар" клавишей 'X' каждые 100мс
+        autoClickerInterval = setInterval(() => {
+            if (typeof emulateKey === 'function') {
+                emulateKey("KeyX", true); // Нажать 'X'
+                setTimeout(() => emulateKey("KeyX", false), 50); // Отпустить 'X' через 50мс
+            }
+        }, 100); 
+    } else {
+        // Останавливаем автокликер
+        clearInterval(autoClickerInterval);
+        autoClickerInterval = null;
+        if (typeof emulateKey === 'function') {
+             emulateKey("KeyX", false); // Убедимся, что клавиша отпущена
+        }
+    }
+}
+
+
+/**
+ * Создает и отображает плавающее Мод-Меню (Красная версия)
+ * ТРЕБУЕТ: joystickPanel, showControls(visible), prefabMessage(text)
+ */
+function createHaxballModMenu() {
+    // Если меню уже существует, выходим
+    if (document.getElementById('haxball-mod-menu')) return;
 
     const menu = document.createElement('div');
-    menu.id = 'mini-vixel';
+    menu.id = 'haxball-mod-menu';
+    
+    // Проверяем состояние джойстика
+    const isJoystickVisible = typeof joystickPanel !== 'undefined' && joystickPanel.style.display === 'block';
+
+    // Внутреннее содержимое меню
     menu.innerHTML = `
-        <div id="mini-btn">V</div>
-        <div id="mini-panel">
-            <div id="mini-title">Vixel Mini</div>
-            <button data="ping">Fake Ping: OFF</button>
-            <button data="trail">Ball Trail: ON</button>
-            <button data="bubble">Bubble Chat: ON</button>
-            <input type="number" id="av" min="0" max="99" value="0" placeholder="avatar">
-            <button id="setav">SET</button>
-        </div>
+        <div id="haxball-menu-header">HaxBall Mod Menu</div>
+        
+        <button class="mod-menu-toggle-btn" data-action="toggle-ball-direction">
+            Прицеливание мяча <span>${isBallDirectionActive ? 'ON' : 'OFF'}</span>
+            <label class="switch"><input type="checkbox" data-target="ball-direction" ${isBallDirectionActive ? 'checked' : ''}><span class="slider"></span></label>
+        </button>
+
+        <button class="mod-menu-toggle-btn" data-action="toggle-autoclicker">
+            Авто-кликер <span>${isAutoClickerActive ? 'ON' : 'OFF'}</span>
+            <label class="switch"><input type="checkbox" data-target="autoclicker" ${isAutoClickerActive ? 'checked' : ''}><span class="slider"></span></label>
+        </button>
+        
+        <button class="mod-menu-toggle-btn" data-action="toggle-visibility">
+            Джойстик <span>${typeof VIRTUAL_JOYSTICK !== 'undefined' ? (isJoystickVisible ? 'ON' : 'OFF') : 'N/A'}</span>
+            <label class="switch"><input type="checkbox" data-target="joystick-vis" ${isJoystickVisible ? 'checked' : ''}><span class="slider"></span></label>
+        </button>
+        
+        <button class="mod-menu-toggle-btn" data-action="clear-chat">Очистить чат</button>
+        <button class="mod-menu-toggle-btn" data-action="reset-all">Сброс настроек</button>
     `;
 
-    const css = document.createElement('style');
-    css.textContent = `
-        #mini-vixel{position:fixed;right:15px;bottom:90px;z-index:99999999}
-        #mini-btn{width:58px;height:58px;background:rgba(0,120,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;
-                  font-size:32px;color:white;font-weight:900;box-shadow:0 6px 25px #0088ff88;cursor:pointer}
-        #mini-panel{position:absolute;right:0;bottom:70px;width:240px;background:rgba(10,20,50,0.95);backdrop-filter:blur(14px);
-                    border:1px solid #0088ff;border-radius:20px;padding:10px;overflow:hidden;opacity:0;pointer-events:none;
-                    transform:scale(0.9);transition:all .3s}
-        #mini-panel.open{opacity:1;pointer-events:all;transform:scale(1)}
-        #mini-title{background:#0088ff;padding:10px;color:white;font-weight:900;text-align:center}
-        #mini-panel button{width:100%;padding:12px;background:transparent;border:none;color:#ddd;text-align:left;
-                            font-size:14px;cursor:pointer;border-bottom:1px solid #0088ff44}
-        #mini-panel input{width:60px;padding:8px;background:#112;border:1px solid #00f;color:#fff;border-radius:6px}
-        #setav{background:#00a;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
-        .trail-dot{position:absolute;width:10px;height:10px;background:rgba(0,255,255,0.6);border-radius:50%;pointer-events:none}
-        .chat-bub{position:absolute;background:rgba(0,0,0,0.75);color:#fff;padding:5px 10px;border-radius:12px;font-size:11px;
-                   white-space:nowrap;pointer-events:none;transform:translate(-50%,-120%);display:none}
-    `;
-    document.head.appendChild(css);
     document.body.appendChild(menu);
+    isMenuOpen = true;
+    menu.style.display = 'block';
 
-    const btn = menu.querySelector('#mini-btn');
-    const panel = menu.querySelector('#mini-panel');
-
-    btn.onclick = () => panel.classList.toggle('open');
-
-    // Fake Ping для всех
-    menu.querySelector('[data="ping"]').onclick = function() {
-        if(fakeAllPing!==null){ fakeAllPing=null; this.innerHTML='Fake Ping: OFF'; }
-        else{
-            const v = prompt('Пинг для всех:', '999');
-            if(v && +v>0){ fakeAllPing=+v; this.innerHTML=`Fake Ping: ${fakeAllPing}ms`; }
+    // --- Логика перетаскивания меню ---
+    let isDraggingMenu = false, startX, startY;
+    const header = menu.querySelector('#haxball-menu-header');
+    
+    // Начать перетаскивание
+    header.addEventListener('mousedown', e => { 
+        isDraggingMenu = true; 
+        startX = e.clientX - menu.offsetLeft; 
+        startY = e.clientY - menu.offsetTop; 
+        menu.style.cursor = 'grabbing';
+        e.preventDefault(); // Предотвращаем выделение текста
+    });
+    
+    // Перетаскивание
+    document.addEventListener('mousemove', e => {
+        if (isDraggingMenu) {
+            // Ограничиваем меню, чтобы оно не уходило далеко за пределы экрана
+            const newLeft = Math.max(0, e.clientX - startX);
+            const newTop = Math.max(0, e.clientY - startY);
+            
+            menu.style.left = newLeft + 'px';
+            menu.style.top = newTop + 'px';
+            menu.style.right = 'auto'; // Отключить 'right' при перетаскивании
         }
-    };
-    setInterval(()=>{ if(fakeAllPing!==null && body){
-        body.querySelectorAll('.ping').forEach(e=>{e.textContent=fakeAllPing;e.style.color=fakeAllPing<50?'#0f0':fakeAllPing<150?'#ff0':'#f00'})
-    }},100);
+    });
+    
+    // Закончить перетаскивание
+    document.addEventListener('mouseup', () => {
+        isDraggingMenu = false;
+        menu.style.cursor = 'grab';
+    });
 
-    // Ball Trail
-    setInterval(()=>{
-        if(!ballTrailOn || !body) return;
-        try{
-            const ball = gameFrame.contentWindow.room?.getBall?.();
-            if(ball){
-                const dot = document.createElement('div');
-                dot.className='trail-dot';
-                dot.style.left=(ball.x+400)+'px';
-                dot.style.top=(ball.y+200)+'px';
-                document.body.appendChild(dot);
-                setTimeout(()=>dot.remove(),700);
-            }
-        }catch(e){}
-    },40);
-
-    // Bubble Chat
-    menu.querySelector('[data="bubble"]').onclick = function(){
-        bubbleOn=!bubbleOn; this.innerHTML=`Bubble Chat: ${bubbleOn?'ON':'OFF'}`;
-    };
-    new MutationObserver(ms=>{
-        if(!bubbleOn) return;
-        ms.forEach(m=>{
-            m.addedNodes.forEach(n=>{
-                if(n.classList?.contains('message')){
-                    const name = n.querySelector('.name')?.textContent;
-                    const text = n.querySelector('.text')?.textContent;
-                    if(name && text){
-                        const pl = Array.from(body.querySelectorAll('.player-list-item')).find(p=>p.textContent.includes(name));
-                        if(pl){
-                            let bub = pl.querySelector('.chat-bub');
-                            if(!bub){ bub=document.createElement('div'); bub.className='chat-bub'; pl.style.position='relative'; pl.appendChild(bub); }
-                            bub.textContent=text; bub.style.display='block';
-                            clearTimeout(bub.t); bub.t=setTimeout(()=>{bub.style.display='none'},4000);
-                        }
-                    }
+    // --- Обработка кликов по кнопкам и свитчам ---
+    menu.addEventListener('click', e => {
+        const btn = e.target.closest('button');
+        const checkbox = e.target.closest('input[type="checkbox"]');
+        
+        // Определяем действие
+        let action = btn ? btn.dataset.action : (checkbox ? checkbox.closest('button').dataset.action : null);
+        
+        // Если нажали на кнопку, но не на сам свитч, переключаем свитч вручную
+        if (btn && !checkbox && btn.querySelector('input[type="checkbox"]')) {
+            const targetCheckbox = btn.querySelector('input[type="checkbox"]');
+            targetCheckbox.checked = !targetCheckbox.checked;
+            // Инициируем изменение, как если бы нажали на него
+            targetCheckbox.dispatchEvent(new Event('change')); 
+            return; // Предотвращаем двойное срабатывание, если клик прошел через кнопку
+        }
+        
+        // Обработка действий
+        switch (action) {
+            case 'toggle-ball-direction':
+                toggleBallDirection();
+                break;
+            case 'toggle-autoclicker':
+                toggleAutoClicker();
+                break;
+            case 'toggle-visibility':
+                if (typeof showControls === 'function' && typeof joystickPanel !== 'undefined') {
+                    // Используем функцию showControls
+                    const currentVisibility = joystickPanel.style.display === 'block';
+                    showControls(!currentVisibility); // Переключаем видимость
+                    
+                    // Обновляем текст кнопки
+                    const span = btn.querySelector('span');
+                    if (span) span.textContent = !currentVisibility ? 'ON' : 'OFF';
                 }
-            });
-        });
-    }).observe(document.querySelector('.chat')||document.body,{childList:true,subtree:true});
+                break;
+            case 'clear-chat':
+                if (typeof prefabMessage === 'function') {
+                    prefabMessage('/clear');
+                }
+                break;
+            case 'reset-all':
+                if (confirm('Внимание! Сбросить ВСЕ локальные настройки HaxBall и перезагрузить страницу?')) {
+                    localStorage.clear();
+                    location.reload();
+                }
+                break;
+        }
+    });
+}
 
-    // Avatar 0-99
-    menu.querySelector('#setav').onclick = () => {
-        const v = menu.querySelector('#av').value;
-        if(v>=0 && v<=99) prefabMessage(`/avatar ${v}`);
-    };
 
-    // Trail on/off
-    menu.querySelector('[data="trail"]').onclick = function(){
-        ballTrailOn=!ballTrailOn; this.innerHTML=`Ball Trail: ${ballTrailOn?'ON':'OFF'}`;
-    };
+/**
+ * Создает плавающую кнопку для открытия/закрытия меню.
+ */
+function createMenuToggleButton() {
+    const toggleButton = document.createElement('button');
+    toggleButton.id = 'mod-menu-open-button';
+    toggleButton.innerHTML = '⚙️';
+    
+    // Добавляем стили для кнопки открытия
+    const toggleStyle = document.createElement('style');
+    toggleStyle.textContent = `
+        #mod-menu-open-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #bd2727; /* Красный, как и меню */
+            color: #fff;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 10001;
+            transition: transform 0.2s, background-color 0.2s;
+            line-height: 0; /* Для центрирования ⚙️ */
+        }
+        #mod-menu-open-button:hover {
+            transform: scale(1.1);
+            background-color: #ff3b3b;
+        }
+    `;
+    document.head.appendChild(toggleStyle);
+    document.body.appendChild(toggleButton);
 
-}, 4000);
-// ======================================== КОНЕЦ — РАБОТАЕТ НА ЛЮБОМ INJE.CTHOR ========================================
+    toggleButton.addEventListener('click', () => {
+        const menu = document.getElementById('haxball-mod-menu');
+        if (!menu) {
+            // Если меню нет, создаем его
+            createHaxballModMenu();
+            // Скрываем кнопку, пока меню открыто
+            toggleButton.style.display = 'none';
+        } else {
+            // Если меню есть, удаляем его
+            menu.remove();
+            isMenuOpen = false;
+            // Показываем кнопку снова
+            toggleButton.style.display = 'block';
+        }
+    });
+}
+
+
+// =======================================================
+// === 3. ЗАПУСК МОД-МЕНЮ ===
+// =======================================================
+
+// Запускаем создание кнопки для открытия/закрытия меню
+createMenuToggleButton(); 
