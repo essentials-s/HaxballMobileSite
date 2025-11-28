@@ -1123,3 +1123,133 @@ if (typeof VIRTUAL_JOYSTICK !== 'undefined') {
         joystickRootStylesheet.innerHTML = ":root {--joystick-size: " + storedSize + "vh;--joystick-margin: " + storedMargin + "vh;--joystick-opacity: " + storedOpacity + "}"
     }
   }
+
+/* ONLY COMMENT TO DISABLE*/
+const BALL_DIRECTION = true;
+
+// Ball direction indicator
+const ballDirection = document.createElement("div");
+ballDirection.setAttribute("id", "ball-direction");
+ballDirection.innerHTML = '↑<div class="ball-direction-line"></div>';
+
+let ballDirectionStylesheet = document.createElement("style");
+ballDirectionStylesheet.innerHTML = `#ball-direction {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+    transition: transform 0.1s ease-out;
+}
+
+.ball-direction-line {
+    width: 2px;
+    height: 30px;
+    background: linear-gradient(to bottom, transparent, #ffffff);
+    margin: 0 auto;
+    border-radius: 1px;
+}`;
+
+document.head.appendChild(ballDirectionStylesheet);
+document.body.appendChild(ballDirection);
+
+// Function to update ball direction
+function updateBallDirection(ballX, ballY, playerX, playerY) {
+    if (!ballDirection) return;
+    
+    const dx = ballX - playerX;
+    const dy = ballY - playerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < 50) {
+        ballDirection.style.display = 'none';
+        return;
+    }
+    
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    
+    ballDirection.style.display = 'block';
+    ballDirection.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
+}
+
+// Function to get ball and player positions from the game
+function getGamePositions() {
+    try {
+        // Try to access game objects from the iframe
+        const gameWindow = document.querySelector('.gameframe').contentWindow;
+        
+        // This will vary depending on Haxball's internal structure
+        // You'll need to inspect the game objects to find the exact properties
+        if (gameWindow.room && gameWindow.room.getBallPosition) {
+            const ballPos = gameWindow.room.getBallPosition();
+            const playerPos = gameWindow.room.getPlayerPosition();
+            
+            if (ballPos && playerPos) {
+                updateBallDirection(ballPos.x, ballPos.y, playerPos.x, playerPos.y);
+            }
+        }
+    } catch (error) {
+        console.log('Cannot access game objects:', error);
+    }
+}
+
+// Poll for game state updates
+let ballDirectionInterval;
+function startBallDirectionTracking() {
+    if (typeof BALL_DIRECTION !== 'undefined' && BALL_DIRECTION) {
+        ballDirectionInterval = setInterval(getGamePositions, 100);
+    }
+}
+
+function stopBallDirectionTracking() {
+    if (ballDirectionInterval) {
+        clearInterval(ballDirectionInterval);
+    }
+}
+
+// Add to your existing DOM observer
+function onDOMChange(mutationsList, observer) {
+    if (!getByDataHook("loader-view")) {
+        if (body.querySelector('.roomlist-view')) {
+            // ... your existing code ...
+            stopBallDirectionTracking();
+        } else if (body.querySelector('.game-view') && !body.querySelector('.showing-room-view') && !body.querySelector('.settings-view')) {
+            showControls(true);
+            handleFPSText();
+            startBallDirectionTracking(); // Start tracking when in game
+        } else {
+            stopBallDirectionTracking();
+            ballDirection.style.display = 'none';
+        }
+    }
+}
+
+// Alternative method using game state events (if available)
+function setupBallDirectionEvents() {
+    try {
+        const gameWindow = document.querySelector('.gameframe').contentWindow;
+        
+        // Listen for game state changes if the API supports events
+        if (gameWindow.room && gameWindow.room.onGameTick) {
+            gameWindow.room.onGameTick(() => {
+                getGamePositions();
+            });
+        }
+    } catch (error) {
+        console.log('Event-based ball direction not available:', error);
+    }
+}
+
+// Initialize when game starts
+setTimeout(() => {
+    if (typeof BALL_DIRECTION !== 'undefined' && BALL_DIRECTION) {
+        setupBallDirectionEvents();
+    }
+}, 3000);
