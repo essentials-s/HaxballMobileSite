@@ -1122,18 +1122,18 @@ if (typeof VIRTUAL_JOYSTICK !== 'undefined') {
         }
         joystickRootStylesheet.innerHTML = ":root {--joystick-size: " + storedSize + "vh;--joystick-margin: " + storedMargin + "vh;--joystick-opacity: " + storedOpacity + "}"
     }
-  }
+}
 
 // =======================================================
-// === 1. КОНФИГУРАЦИЯ И СТИЛИ КРАСНОГО МОД-МЕНЮ ===
+// === 1. КОНФИГУРАЦИЯ И СТИЛИ КРАСНОГО МОД-МЕНЮ (V3) ===
 // =======================================================
 
 let isMenuOpen = false;
-let isBallDirectionActive = false; // Состояние прицеливания мяча
+let isAimbotActive = false;       // Состояние Aimbot
 let isAutoClickerActive = false;  // Состояние автокликера
 let autoClickerInterval = null;   // Переменная для хранения ID интервала автокликера
 
-// CSS для нового меню: компактное, красное, полупрозрачное
+// CSS для меню
 const MOD_MENU_CSS = `
     /* Общие стили для Mod Menu */
     #haxball-mod-menu {
@@ -1218,21 +1218,13 @@ const MOD_MENU_CSS = `
     input:checked + .slider:before {
       transform: translateX(14px);
     }
-    
-    /* Стили для прицела */
-    #ball-direction-line {
-        position: absolute;
-        width: 5px; /* Ширина линии */
-        background-color: rgba(255, 255, 255, 0.5); /* Белый и полупрозрачный */
-        pointer-events: none; /* Линия не должна мешать кликам */
-        transform-origin: top center; /* Точка вращения */
-        display: none; /* Скрыто, пока не активно */
-        z-index: 9999;
-    }
 `;
 
 // Добавляем стили в главный документ (не в iframe)
-document.head.appendChild(Object.assign(document.createElement('style'), { innerHTML: MOD_MENU_CSS }));
+// Проверяем, чтобы не добавить дважды
+if (!document.querySelector('style[data-mod="haxball-css"]')) {
+    document.head.appendChild(Object.assign(document.createElement('style'), { innerHTML: MOD_MENU_CSS, 'data-mod': 'haxball-css' }));
+}
 
 
 // =======================================================
@@ -1240,34 +1232,28 @@ document.head.appendChild(Object.assign(document.createElement('style'), { inner
 // =======================================================
 
 /**
- * Переключает отображение индикатора направления мяча.
- * ТРЕБУЕТ ФУНКЦИЙ: startBallDirectionDemo() и stopBallDirectionDemo()
+ * Переключает режим Aimbot.
+ * ЭТО ЗАГЛУШКА. НАСТОЯЩИЙ КОД БУДЕТ ДОБАВЛЕН ЗДЕСЬ.
  */
-function toggleBallDirection() {
-    isBallDirectionActive = !isBallDirectionActive;
-    const btn = document.querySelector('[data-action="toggle-ball-direction"]');
+function toggleAimbot() {
+    isAimbotActive = !isAimbotActive;
+    const btn = document.querySelector('[data-action="toggle-aimbot"]');
     if (btn) {
-        // Обновляем текст кнопки
-        btn.querySelector('span').textContent = isBallDirectionActive ? 'ON' : 'OFF';
+        btn.querySelector('span').textContent = isAimbotActive ? 'ON' : 'OFF';
     }
 
-    if (isBallDirectionActive) {
-        // Здесь должна быть логика запуска прицела
-        if (typeof startBallDirectionDemo === 'function') {
-            startBallDirectionDemo();
-        } else {
-            console.warn("Внимание: Функция startBallDirectionDemo не найдена. Прицел не запущен.");
-        }
+    if (isAimbotActive) {
+        console.log("Aimbot: Включен. Нужна реализация! Будем искать, как получить доступ к данным игры.");
+        // if (typeof startAimbot === 'function') { startAimbot(); }
     } else {
-        // Здесь должна быть логика остановки прицела
-        if (typeof stopBallDirectionDemo === 'function') {
-            stopBallDirectionDemo();
-        }
+        console.log("Aimbot: Выключен.");
+        // if (typeof stopAimbot === 'function') { stopAimbot(); }
     }
 }
 
 /**
  * Переключает режим автокликера (автоматический удар).
+ * Ускорен до 30мс.
  * ТРЕБУЕТ ФУНКЦИИ: emulateKey(code, isDown)
  */
 function toggleAutoClicker() {
@@ -1278,13 +1264,14 @@ function toggleAutoClicker() {
     }
 
     if (isAutoClickerActive) {
-        // Запускаем автоматический "удар" клавишей 'X' каждые 100мс
+        // Запускаем автоматический "удар" клавишей 'X' каждые 30мс (Максимально быстро!)
         autoClickerInterval = setInterval(() => {
             if (typeof emulateKey === 'function') {
-                emulateKey("KeyX", true); // Нажать 'X'
-                setTimeout(() => emulateKey("KeyX", false), 50); // Отпустить 'X' через 50мс
+                // Нажатие и отпускание 'X'
+                emulateKey("KeyX", true);
+                setTimeout(() => emulateKey("KeyX", false), 15); // Задержка 15 мс для имитации нажатия
             }
-        }, 100); 
+        }, 30); // Повторять каждые 30мс
     } else {
         // Останавливаем автокликер
         clearInterval(autoClickerInterval);
@@ -1297,8 +1284,7 @@ function toggleAutoClicker() {
 
 
 /**
- * Создает и отображает плавающее Мод-Меню (Красная версия)
- * ТРЕБУЕТ: joystickPanel, showControls(visible), prefabMessage(text)
+ * Создает и отображает плавающее Мод-Меню (Красная версия V3)
  */
 function createHaxballModMenu() {
     // Если меню уже существует, выходим
@@ -1307,30 +1293,19 @@ function createHaxballModMenu() {
     const menu = document.createElement('div');
     menu.id = 'haxball-mod-menu';
     
-    // Проверяем состояние джойстика
-    const isJoystickVisible = typeof joystickPanel !== 'undefined' && joystickPanel.style.display === 'block';
-
-    // Внутреннее содержимое меню
+    // Внутреннее содержимое меню (только Aimbot и Автокликер)
     menu.innerHTML = `
-        <div id="haxball-menu-header">HaxBall Mod Menu</div>
+        <div id="haxball-menu-header">HaxBall Mod Menu V3</div>
         
-        <button class="mod-menu-toggle-btn" data-action="toggle-ball-direction">
-            Прицеливание мяча <span>${isBallDirectionActive ? 'ON' : 'OFF'}</span>
-            <label class="switch"><input type="checkbox" data-target="ball-direction" ${isBallDirectionActive ? 'checked' : ''}><span class="slider"></span></label>
+        <button class="mod-menu-toggle-btn" data-action="toggle-aimbot">
+            Aimbot (Прицел) <span>${isAimbotActive ? 'ON' : 'OFF'}</span>
+            <label class="switch"><input type="checkbox" data-target="aimbot" ${isAimbotActive ? 'checked' : ''}><span class="slider"></span></label>
         </button>
 
         <button class="mod-menu-toggle-btn" data-action="toggle-autoclicker">
-            Авто-кликер <span>${isAutoClickerActive ? 'ON' : 'OFF'}</span>
+            Авто-кликер (X) <span>${isAutoClickerActive ? 'ON' : 'OFF'}</span>
             <label class="switch"><input type="checkbox" data-target="autoclicker" ${isAutoClickerActive ? 'checked' : ''}><span class="slider"></span></label>
         </button>
-        
-        <button class="mod-menu-toggle-btn" data-action="toggle-visibility">
-            Джойстик <span>${typeof VIRTUAL_JOYSTICK !== 'undefined' ? (isJoystickVisible ? 'ON' : 'OFF') : 'N/A'}</span>
-            <label class="switch"><input type="checkbox" data-target="joystick-vis" ${isJoystickVisible ? 'checked' : ''}><span class="slider"></span></label>
-        </button>
-        
-        <button class="mod-menu-toggle-btn" data-action="clear-chat">Очистить чат</button>
-        <button class="mod-menu-toggle-btn" data-action="reset-all">Сброс настроек</button>
     `;
 
     document.body.appendChild(menu);
@@ -1341,29 +1316,25 @@ function createHaxballModMenu() {
     let isDraggingMenu = false, startX, startY;
     const header = menu.querySelector('#haxball-menu-header');
     
-    // Начать перетаскивание
     header.addEventListener('mousedown', e => { 
         isDraggingMenu = true; 
         startX = e.clientX - menu.offsetLeft; 
         startY = e.clientY - menu.offsetTop; 
         menu.style.cursor = 'grabbing';
-        e.preventDefault(); // Предотвращаем выделение текста
+        e.preventDefault();
     });
     
-    // Перетаскивание
     document.addEventListener('mousemove', e => {
         if (isDraggingMenu) {
-            // Ограничиваем меню, чтобы оно не уходило далеко за пределы экрана
             const newLeft = Math.max(0, e.clientX - startX);
             const newTop = Math.max(0, e.clientY - startY);
             
             menu.style.left = newLeft + 'px';
             menu.style.top = newTop + 'px';
-            menu.style.right = 'auto'; // Отключить 'right' при перетаскивании
+            menu.style.right = 'auto';
         }
     });
     
-    // Закончить перетаскивание
     document.addEventListener('mouseup', () => {
         isDraggingMenu = false;
         menu.style.cursor = 'grab';
@@ -1374,62 +1345,37 @@ function createHaxballModMenu() {
         const btn = e.target.closest('button');
         const checkbox = e.target.closest('input[type="checkbox"]');
         
-        // Определяем действие
         let action = btn ? btn.dataset.action : (checkbox ? checkbox.closest('button').dataset.action : null);
         
-        // Если нажали на кнопку, но не на сам свитч, переключаем свитч вручную
+        // Вручную переключаем свитч, если нажали на кнопку
         if (btn && !checkbox && btn.querySelector('input[type="checkbox"]')) {
             const targetCheckbox = btn.querySelector('input[type="checkbox"]');
             targetCheckbox.checked = !targetCheckbox.checked;
-            // Инициируем изменение, как если бы нажали на него
             targetCheckbox.dispatchEvent(new Event('change')); 
-            return; // Предотвращаем двойное срабатывание, если клик прошел через кнопку
+            return;
         }
         
-        // Обработка действий
         switch (action) {
-            case 'toggle-ball-direction':
-                toggleBallDirection();
+            case 'toggle-aimbot':
+                toggleAimbot();
                 break;
             case 'toggle-autoclicker':
                 toggleAutoClicker();
                 break;
-            case 'toggle-visibility':
-                if (typeof showControls === 'function' && typeof joystickPanel !== 'undefined') {
-                    // Используем функцию showControls
-                    const currentVisibility = joystickPanel.style.display === 'block';
-                    showControls(!currentVisibility); // Переключаем видимость
-                    
-                    // Обновляем текст кнопки
-                    const span = btn.querySelector('span');
-                    if (span) span.textContent = !currentVisibility ? 'ON' : 'OFF';
-                }
-                break;
-            case 'clear-chat':
-                if (typeof prefabMessage === 'function') {
-                    prefabMessage('/clear');
-                }
-                break;
-            case 'reset-all':
-                if (confirm('Внимание! Сбросить ВСЕ локальные настройки HaxBall и перезагрузить страницу?')) {
-                    localStorage.clear();
-                    location.reload();
-                }
-                break;
+            // Сброс настроек полностью удален
         }
     });
 }
 
 
 /**
- * Создает плавающую кнопку для открытия/закрытия меню.
+ * Создает плавающую кнопку для открытия/закрытия меню
  */
 function createMenuToggleButton() {
     const toggleButton = document.createElement('button');
     toggleButton.id = 'mod-menu-open-button';
     toggleButton.innerHTML = '⚙️';
     
-    // Добавляем стили для кнопки открытия
     const toggleStyle = document.createElement('style');
     toggleStyle.textContent = `
         #mod-menu-open-button {
@@ -1439,7 +1385,7 @@ function createMenuToggleButton() {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-color: #bd2727; /* Красный, как и меню */
+            background-color: #bd2727; 
             color: #fff;
             border: 2px solid #fff;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
@@ -1447,28 +1393,27 @@ function createMenuToggleButton() {
             cursor: pointer;
             z-index: 10001;
             transition: transform 0.2s, background-color 0.2s;
-            line-height: 0; /* Для центрирования ⚙️ */
+            line-height: 0; 
         }
         #mod-menu-open-button:hover {
             transform: scale(1.1);
             background-color: #ff3b3b;
         }
     `;
-    document.head.appendChild(toggleStyle);
+    // Добавляем стили для кнопки
+    if (!document.querySelector('style[data-mod="haxball-button-css"]')) {
+         document.head.appendChild(Object.assign(toggleStyle, {'data-mod': 'haxball-button-css'}));
+    }
     document.body.appendChild(toggleButton);
 
     toggleButton.addEventListener('click', () => {
         const menu = document.getElementById('haxball-mod-menu');
         if (!menu) {
-            // Если меню нет, создаем его
             createHaxballModMenu();
-            // Скрываем кнопку, пока меню открыто
             toggleButton.style.display = 'none';
         } else {
-            // Если меню есть, удаляем его
             menu.remove();
             isMenuOpen = false;
-            // Показываем кнопку снова
             toggleButton.style.display = 'block';
         }
     });
@@ -1479,5 +1424,4 @@ function createMenuToggleButton() {
 // === 3. ЗАПУСК МОД-МЕНЮ ===
 // =======================================================
 
-// Запускаем создание кнопки для открытия/закрытия меню
-createMenuToggleButton(); 
+createMenuToggleButton();
