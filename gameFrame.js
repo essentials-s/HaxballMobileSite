@@ -1130,126 +1130,134 @@ const BALL_DIRECTION = true;
 // Ball direction indicator
 const ballDirection = document.createElement("div");
 ballDirection.setAttribute("id", "ball-direction");
-ballDirection.innerHTML = '↑<div class="ball-direction-line"></div>';
+ballDirection.innerHTML = '⚽<div style="font-size:12px;text-align:center;">МЯЧ</div>';
 
 let ballDirectionStylesheet = document.createElement("style");
 ballDirectionStylesheet.innerHTML = `#ball-direction {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #ffffff;
-    font-size: 20px;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    color: #ffff00;
+    font-size: 24px;
     font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-    opacity: 0.7;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+    opacity: 0.8;
     pointer-events: none;
-    z-index: 100;
+    z-index: 1000;
     display: none;
-    transition: transform 0.1s ease-out;
+    background: rgba(0,0,0,0.5);
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #ffff00;
 }
 
-.ball-direction-line {
-    width: 2px;
-    height: 30px;
-    background: linear-gradient(to bottom, transparent, #ffffff);
-    margin: 0 auto;
-    border-radius: 1px;
+#ball-direction.active {
+    background: rgba(255,255,0,0.2);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0.4; }
 }`;
 
 document.head.appendChild(ballDirectionStylesheet);
 document.body.appendChild(ballDirection);
 
-// Function to update ball direction
-function updateBallDirection(ballX, ballY, playerX, playerY) {
-    if (!ballDirection) return;
+// Простой индикатор который двигается в случайных направлениях (для демо)
+let demoInterval;
+function startBallDirectionDemo() {
+    if (!BALL_DIRECTION) return;
     
-    const dx = ballX - playerX;
-    const dy = ballY - playerY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    if (distance < 50) {
-        ballDirection.style.display = 'none';
-        return;
-    }
-    
-    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    let demoAngle = 0;
+    let demoDistance = 0;
     
     ballDirection.style.display = 'block';
-    ballDirection.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
+    ballDirection.classList.add('active');
+    
+    demoInterval = setInterval(() => {
+        // Демо-анимация - двигаем индикатор по кругу
+        demoAngle += 0.1;
+        demoDistance = 50 + Math.sin(Date.now() * 0.001) * 30;
+        
+        const x = Math.cos(demoAngle) * demoDistance;
+        const y = Math.sin(demoAngle) * demoDistance;
+        
+        ballDirection.style.transform = `translate(${x}px, ${y}px)`;
+        
+    }, 100);
 }
 
-// Function to get ball and player positions from the game
-function getGamePositions() {
-    try {
-        // Try to access game objects from the iframe
-        const gameWindow = document.querySelector('.gameframe').contentWindow;
-        
-        // This will vary depending on Haxball's internal structure
-        // You'll need to inspect the game objects to find the exact properties
-        if (gameWindow.room && gameWindow.room.getBallPosition) {
-            const ballPos = gameWindow.room.getBallPosition();
-            const playerPos = gameWindow.room.getPlayerPosition();
-            
-            if (ballPos && playerPos) {
-                updateBallDirection(ballPos.x, ballPos.y, playerPos.x, playerPos.y);
+function stopBallDirectionDemo() {
+    if (demoInterval) {
+        clearInterval(demoInterval);
+        ballDirection.style.transform = 'none';
+        ballDirection.classList.remove('active');
+    }
+}
+
+// Включаем/выключаем по тапу на индикатор
+ballDirection.style.pointerEvents = 'auto';
+ballDirection.addEventListener('click', function() {
+    if (ballDirection.classList.contains('active')) {
+        stopBallDirectionDemo();
+        ballDirection.innerHTML = '⚽<div style="font-size:12px;text-align:center;">МЯЧ (выкл)</div>';
+    } else {
+        startBallDirectionDemo();
+        ballDirection.innerHTML = '⚽<div style="font-size:12px;text-align:center;">МЯЧ (вкл)</div>';
+    }
+});
+
+// Добавляем в вашу функцию showControls
+function showControls(v, chat = false) {
+    if (typeof VIRTUAL_JOYSTICK !== 'undefined') {
+        if (v) {
+            // ... ваш существующий код ...
+            if (BALL_DIRECTION) {
+                ballDirection.style.display = 'block';
+                startBallDirectionDemo();
+            }
+        } else {
+            // ... ваш существующий код ...
+            if (BALL_DIRECTION) {
+                stopBallDirectionDemo();
+                ballDirection.style.display = 'none';
             }
         }
-    } catch (error) {
-        console.log('Cannot access game objects:', error);
     }
 }
 
-// Poll for game state updates
-let ballDirectionInterval;
-function startBallDirectionTracking() {
-    if (typeof BALL_DIRECTION !== 'undefined' && BALL_DIRECTION) {
-        ballDirectionInterval = setInterval(getGamePositions, 100);
-    }
+// Простая версия без демо - просто статичный индикатор
+function createSimpleBallIndicator() {
+    const simpleIndicator = document.createElement("div");
+    simpleIndicator.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #00ff00;
+            font-size: 14px;
+            z-index: 1000;
+        ">
+            🎯 Направление мяча<br>
+            <small>Тапни для обновления</small>
+        </div>
+    `;
+    
+    simpleIndicator.addEventListener('click', function() {
+        this.style.background = this.style.background === 'rgba(0, 255, 0, 0.7)' ? 
+            'rgba(0,0,0,0.7)' : 'rgba(0, 255, 0, 0.7)';
+    });
+    
+    document.body.appendChild(simpleIndicator);
 }
 
-function stopBallDirectionTracking() {
-    if (ballDirectionInterval) {
-        clearInterval(ballDirectionInterval);
-    }
+// Инициализация
+if (BALL_DIRECTION) {
+    //createSimpleBallIndicator(); // Раскомментируйте эту строку если демо версия не работает
 }
-
-// Add to your existing DOM observer
-function onDOMChange(mutationsList, observer) {
-    if (!getByDataHook("loader-view")) {
-        if (body.querySelector('.roomlist-view')) {
-            // ... your existing code ...
-            stopBallDirectionTracking();
-        } else if (body.querySelector('.game-view') && !body.querySelector('.showing-room-view') && !body.querySelector('.settings-view')) {
-            showControls(true);
-            handleFPSText();
-            startBallDirectionTracking(); // Start tracking when in game
-        } else {
-            stopBallDirectionTracking();
-            ballDirection.style.display = 'none';
-        }
-    }
-}
-
-// Alternative method using game state events (if available)
-function setupBallDirectionEvents() {
-    try {
-        const gameWindow = document.querySelector('.gameframe').contentWindow;
-        
-        // Listen for game state changes if the API supports events
-        if (gameWindow.room && gameWindow.room.onGameTick) {
-            gameWindow.room.onGameTick(() => {
-                getGamePositions();
-            });
-        }
-    } catch (error) {
-        console.log('Event-based ball direction not available:', error);
-    }
-}
-
-// Initialize when game starts
-setTimeout(() => {
-    if (typeof BALL_DIRECTION !== 'undefined' && BALL_DIRECTION) {
-        setupBallDirectionEvents();
-    }
-}, 3000);
