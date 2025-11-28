@@ -1124,3 +1124,48 @@ if (typeof VIRTUAL_JOYSTICK !== 'undefined') {
     }
   }
 
+// ======================================== VIXEL ULTIMATE 2026 — СИНЕЕ ПРОЗРАЧНОЕ КОМПАКТНОЕ МОД-МЕНЮ ========================================
+setTimeout(() => {
+    if (document.getElementById('vixel-ultimate')) return;
+
+    let autoClick = false, aimbotGate = false, bubbleChat = false, fpsVisible = true;
+    const menu = document.createElement('div');
+    menu.id = 'vixel-ultimate';
+    menu.innerHTML = `
+        <div id="v-btn">V</div>
+        <div id="v-panel">
+            <div id="v-title">Vixel Ultimate</div>
+            <label><input type="checkbox" data-mod="autoclick"> Автокликер (ультра)</label>
+            <label><input type="checkbox" data-mod="aimbot"> Аимбот в пустые ворота</label>
+            <label><input type="checkbox" data-mod="bubble"> Bubble Chat</label>
+            <label><input type="checkbox" data-mod="fps" checked> Показывать FPS</label>
+        </div>
+    `;
+
+    const css = document.createElement('style');
+    css.textContent = `
+        #vixel-ultimate{position:fixed;right:15px;bottom:90px;z-index:9999999;font-family:Arial,sans-serif;user-select:none}
+        #v-btn{width:60px;height:60px;background:rgba(0,120,255,0.88);border-radius:50%;display:flex;align-items:center;justify-content:center;
+              font-size:32px;color:white;font-weight:bold;box-shadow:0 6px 25px rgba(0,100,255,0.5);cursor:pointer;transition:.2s}
+        #v-btn:active{transform:scale(0.9)}
+        #v-panel{position:absolute;right:0;bottom:76px;width:260px;background:rgba(10,20,50,0.94);backdrop-filter:blur(14px);
+                 border:1px solid rgba(0,180,255,0.4);border-radius:20px;padding:12px 0;overflow:hidden;
+                 opacity:0;pointer-events:none;transform:scale(0.9) translateY(10px);transition:all .3s ease}
+        #v-panel.open{opacity:1;pointer-events:all;transform:scale(1) translateY(0)}
+        #v-title{background:linear-gradient(90deg,#0088ff,#00d0ff);padding:10px 16px;color:white;font-weight:900;font-size:15px;text-align:center}
+        #v-panel label{display:flex;align-items:center;padding:12px 18px;color:#ccc;font-size:14px;cursor:pointer}
+        #v-panel input{margin-right:12px;width:18px;height:18px;cursor:pointer}
+        #v-panel label:hover{background:rgba(0,150,255,0.15)}
+        .bubble-chat{position:absolute;background:rgba(0,0,0,0.7);color:white;padding:6px 10px;border-radius:12px;font-size:12px;
+                     pointer-events:none;transform:translateX(-50%);white-space:nowrap;display:none;z-index:9999}
+        .bubble-chat::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:rgba(0,0,0,0.7)}
+    `;
+    document.head.appendChild(css);
+    document.body.appendChild(menu);
+
+    const btn = menu.querySelector('#v-btn');
+    const panel = menu.querySelector('#v-panel');
+
+    // Открытие/закрытие + перетаскивание
+    let dragging = false, ox, oy;
+    btn.addEventListener('mousedown', e => { if(e.target.tagName!=='INPUT') {dragging=true; ox=e.clientX-menu.offsetLeft; oy=e.client
