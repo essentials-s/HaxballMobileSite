@@ -1124,48 +1124,66 @@ if (typeof VIRTUAL_JOYSTICK !== 'undefined') {
     }
   }
 
-// ======================================== VIXEL ULTIMATE 2026 — СИНЕЕ ПРОЗРАЧНОЕ КОМПАКТНОЕ МОД-МЕНЮ ========================================
-setTimeout(() => {
-    if (document.getElementById('vixel-ultimate')) return;
+// ======================================== INJECTHOR ULTIMATE 2026 — РАБОТАЕТ НА ЛЮБОМ INJECTHOR ========================================
+setInterval(() => {
+    if (document.getElementById('inj-ultimate') || !window.gameFrame || !gameFrame.contentWindow.room) return;
 
-    let autoClick = false, aimbotGate = false, bubbleChat = false, fpsVisible = true;
+    let autoClick = false, aimbotGate = false, bubbleChat = false, fpsVisible = true, ballTrail = true, avatarNum = 0;
+
     const menu = document.createElement('div');
-    menu.id = 'vixel-ultimate';
+    menu.id = 'inj-ultimate';
     menu.innerHTML = `
-        <div id="v-btn">V</div>
-        <div id="v-panel">
-            <div id="v-title">Vixel Ultimate</div>
-            <label><input type="checkbox" data-mod="autoclick"> Автокликер (ультра)</label>
-            <label><input type="checkbox" data-mod="aimbot"> Аимбот в пустые ворота</label>
-            <label><input type="checkbox" data-mod="bubble"> Bubble Chat</label>
-            <label><input type="checkbox" data-mod="fps" checked> Показывать FPS</label>
+        <div id="inj-btn">I</div>
+        <div id="inj-panel">
+            <div id="inj-title">InjecThor Ultimate</div>
+            <label><input type="checkbox" data-m="ac"> Автокликер ультра</label>
+            <label><input type="checkbox" data-m="aim"> Аимбот в ворота</label>
+            <label><input type="checkbox" data-m="bubble" checked> Bubble Chat</label>
+            <label><input type="checkbox" data-m="trail" checked> Ball Trail</label>
+            <label><input type="checkbox" data-m="fps" checked> Показ FPS</label>
+            <label>Аватар: <input type="number" id="avatar-inp" min="0" max="99" value="0" style="width:50px"> 
+                <button id="set-avatar">SET</button></label>
         </div>
     `;
 
     const css = document.createElement('style');
     css.textContent = `
-        #vixel-ultimate{position:fixed;right:15px;bottom:90px;z-index:9999999;font-family:Arial,sans-serif;user-select:none}
-        #v-btn{width:60px;height:60px;background:rgba(0,120,255,0.88);border-radius:50%;display:flex;align-items:center;justify-content:center;
-              font-size:32px;color:white;font-weight:bold;box-shadow:0 6px 25px rgba(0,100,255,0.5);cursor:pointer;transition:.2s}
-        #v-btn:active{transform:scale(0.9)}
-        #v-panel{position:absolute;right:0;bottom:76px;width:260px;background:rgba(10,20,50,0.94);backdrop-filter:blur(14px);
-                 border:1px solid rgba(0,180,255,0.4);border-radius:20px;padding:12px 0;overflow:hidden;
-                 opacity:0;pointer-events:none;transform:scale(0.9) translateY(10px);transition:all .3s ease}
-        #v-panel.open{opacity:1;pointer-events:all;transform:scale(1) translateY(0)}
-        #v-title{background:linear-gradient(90deg,#0088ff,#00d0ff);padding:10px 16px;color:white;font-weight:900;font-size:15px;text-align:center}
-        #v-panel label{display:flex;align-items:center;padding:12px 18px;color:#ccc;font-size:14px;cursor:pointer}
-        #v-panel input{margin-right:12px;width:18px;height:18px;cursor:pointer}
-        #v-panel label:hover{background:rgba(0,150,255,0.15)}
-        .bubble-chat{position:absolute;background:rgba(0,0,0,0.7);color:white;padding:6px 10px;border-radius:12px;font-size:12px;
-                     pointer-events:none;transform:translateX(-50%);white-space:nowrap;display:none;z-index:9999}
-        .bubble-chat::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:rgba(0,0,0,0.7)}
+        #inj-ultimate{position:fixed;right:12px;bottom:85px;z-index:99999999;font-family:Arial;user-select:none}
+        #inj-btn{width:62px;height:62px;background:rgba(0,130,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;
+                 font-size:34px;color:#fff;font-weight:900;box-shadow:0 8px 30px rgba(0,130,255,0.6);cursor:pointer}
+        #inj-panel{position:absolute;right:0;bottom:76px;width:270px;background:rgba(8,18,45,0.96);backdrop-filter:blur(16px);
+                   border:1px solid rgba(0,180,255,0.5);border-radius:22px;padding:10px 0;overflow:hidden;
+                   opacity:0;pointer-events:none;transform:scale(0.88);transition:all .35s}
+        #inj-panel.open{opacity:1;pointer-events:all;transform:scale(1)}
+        #inj-title{background:linear-gradient(90deg,#0088ff,#00f0ff);padding:11px;color:white;font-weight:900;text-align:center}
+        #inj-panel label{display:flex;align-items:center;padding:11px 18px;color:#ddd;font-size:14px}
+        #inj-panel input[type=checkbox]{margin-right:12px;width:19px;height:19px;cursor:pointer}
+        #inj-panel input[type=number]{background:#112;border:1px solid #00f;color:#fff;padding:4px;border-radius:6px}
+        #set-avatar{background:#00a8ff;color:white;border:none;padding:4px 10px;border-radius:6px;cursor:pointer}
+        .ball-trail{position:absolute;width:12px;height:12px;background:rgba(0,255,255,0.7);border-radius:50%;pointer-events:none;z-index:9999}
+        .chat-bubble{position:absolute;background:rgba(0,0,0,0.75);color:#fff;padding:6px 12px;border-radius:14px;font-size:11px;
+                     white-space:nowrap;pointer-events:none;transform:translate(-50%,-100%);top:-10px;display:none}
     `;
     document.head.appendChild(css);
     document.body.appendChild(menu);
 
-    const btn = menu.querySelector('#v-btn');
-    const panel = menu.querySelector('#v-panel');
+    const btn = menu.querySelector('#inj-btn');
+    const panel = menu.querySelector('#inj-panel');
 
     // Открытие/закрытие + перетаскивание
     let dragging = false, ox, oy;
-    btn.addEventListener('mousedown', e => { if(e.target.tagName!=='INPUT') {dragging=true; ox=e.clientX-menu.offsetLeft; oy=e.client
+    btn.addEventListener('touchstart', e => { e.preventDefault(); dragging=true; ox=e.touches[0].clientX-menu.offsetLeft; oy=e.touches[0].clientY-menu.offsetTop; });
+    btn.addEventListener('mousedown', e => { dragging=true; ox=e.clientX-menu.offsetLeft; oy=e.clientY-menu.offsetTop; });
+    document.addEventListener('touchmove', e => { if(dragging){ menu.style.left=(e.touches[0].clientX-ox)+'px'; menu.style.top=(e.touches[0].clientY-oy)+'px'; menu.style.right='auto'; menu.style.bottom='auto'; } });
+    document.addEventListener('mousemove', e => { if(dragging){ menu.style.left=(e.clientX-ox)+'px'; menu.style.top=(e.clientY-oy)+'px'; } });
+    document.addEventListener('mouseup', () => dragging=false);
+    document.addEventListener('touchend', () => dragging=false);
+    btn.addEventListener('click', () => panel.classList.toggle('open'));
+
+    // Моды
+    menu.addEventListener('change', e => {
+        if(e.target.type!=='checkbox') return;
+        const m = e.target.dataset.m;
+        if(m==='ac') autoClick = e.target.checked;
+        if(m==='aim') aimbotGate = e.target.checked;
+        if(m==='bubble') bubbleChat = e.target.checked;
