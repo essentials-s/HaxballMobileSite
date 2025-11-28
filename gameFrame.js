@@ -1124,198 +1124,57 @@ if (typeof VIRTUAL_JOYSTICK !== 'undefined') {
     }
   }
 
-// ======================= КРУГЛОЕ МОД-МЕНЮ 2025 (сворачивается в кружок) =======================
-let fakeMyPing = null;
+// ======================================== ФИНАЛЬНОЕ КРУГЛОЕ МОД-МЕНЮ + AIMBOT + ФЕЙК ПИНГ ДЛЯ ВСЕХ ========================================
+let fakeGlobalPing = null; // null = выкл, число = фейк для всех игроков
+let aimbotEnabled = false;
+let aimbotLine = null;
 
-function createRoundModMenu() {
-    if (document.getElementById('round-mod-menu')) return;
+function createFinalRoundMenu() {
+    if (document.getElementById('final-round-menu')) return;
 
     const menu = document.createElement('div');
-    menu.id = 'round-mod-menu';
+    menu.id = 'final-round-menu';
     menu.innerHTML = `
-        <div id="round-menu-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
-                <path d="M8 12h8M12 8v8"/>
-            </svg>
+        <div id="menu-circle">
+            <svg viewBox="0 0 24 24"><path fill="white" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2Z"/></svg>
         </div>
-        <div id="round-menu-panel">
-            <div id="round-menu-header">
-                <span>Vixel Mod</span>
-                <button id="round-menu-close">×</button>
-            </div>
+        <div id="menu-panel">
+            <div id="menu-header">Vixel Final</div>
             <button data-action="fake-ping">Fake Ping: <b>OFF</b></button>
-            <button data-action="toggle-joystick">Джойстик ${VIRTUAL_JOYSTICK ? 'ON' : 'OFF'}</button>
+            <button data-action="aimbot">Aimbot: <b>OFF</b></button>
+            <button data-action="toggle-joystick">Джойстик ${VIRTUAL_JOYSTICK?'ON':'OFF'}</button>
             <button data-action="toggle-chatjoy">Чат-джойстик ON</button>
-            <button data-action="toggle-fps">FPS ${localStorage.getItem('show_fps') === '0' ? 'OFF' : 'ON'}</button>
-            <button data-action="clear-chat">Очистить чат</button>
+            <button data-action="toggle-fps">FPS ${localStorage.getItem('show_fps')==='0'?'OFF':'ON'}</button>
             <button data-action="store">/store</button>
             <button data-action="afk">AFK кик</button>
-            <button data-action="reset">Сброс настроек</button>
         </div>
     `;
 
     const style = document.createElement('style');
     style.textContent = `
-        #round-mod-menu {
-            position: fixed;
-            right: 20px;
-            bottom: 100px;
-            z-index: 9999999;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        #round-menu-btn {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, #ff8c00, #ff2d55);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 25px rgba(255,45,85,0.5);
-            cursor: pointer;
-            animation: pulse 3s infinite;
-        }
-        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
-
-        #round-menu-btn svg { width: 32px; height: 32px; }
-
-        #round-menu-panel {
-            position: absolute;
-            right: 0;
-            bottom: 80px;
-            width: 280px;
-            background: rgba(15, 20, 35, 0.96);
-            backdrop-filter: blur(16px);
-            border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.15);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.7);
-            overflow: hidden;
-            opacity: 0;
-            transform: scale(0.8) translateY(20px);
-            pointer-events: none;
-            transition: all 0.35s ease;
-        }
-        #round-menu-panel.open {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-            pointer-events: all;
-        }
-        #round-menu-header {
-            background: rgba(255,255,255,0.08);
-            padding: 16px 20px;
-            font-weight: bold;
-            font-size: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #ff8c00;
-        }
-        #round-menu-close {
-            background: none;
-            border: none;
-            color: #ff5c5c;
-            font-size: 28px;
-            cursor: pointer;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #round-menu-close:hover { background: rgba(255,0,0,0.3); }
-
-        #round-menu-panel button {
-            width: 100%;
-            padding: 16px 20px;
-            background: transparent;
-            border: none;
-            color: #ddd;
-            text-align: left;
-            font-size: 15px;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.2s;
-        }
-        #round-menu-panel button:hover {
-            background: rgba(255,140,0,0.15);
-            padding-left: 28px;
-            color: white;
-        }
-        #round-menu-panel button:last-child { border: none; }
+        #final-round-menu{position:fixed;right:20px;bottom:100px;z-index:9999999;font-family:Inter,sans-serif}
+        #menu-circle{width:68px;height:68px;background:rgba(0,100,255,0.85);border-radius:50%;display:flex;align-items:center;justify-content:center;
+            box-shadow:0 8px 30px rgba(0,100,255,0.6);cursor:move;transition:all .3s}
+        #menu-circle svg{width:36px;height:36px}
+        #menu-panel{position:absolute;right:0;bottom:84px;width:290px;background:rgba(10,15,35,0.97);backdrop-filter:blur(16px);
+            border:1px solid rgba(0,150,255,0.4);border-radius:26px;overflow:hidden;opacity:0;pointer-events:none;
+            transform:scale(0.8) translateY(20px);transition:all .4s cubic-bezier(0.2,0.8,0.2,1)}
+        #menu-panel.open{opacity:1;pointer-events:all;transform:scale(1) translateY(0)}
+        #menu-header{background:rgba(0,120,255,0.3);padding:16px 20px;color:#00d0ff;font-weight:900;font-size:17px;text-align:center}
+        #menu-panel button{width:100%;padding:16px 20px;background:transparent;border:none;color:#ccc;text-align:left;
+            font-size:15px;cursor:pointer;border-bottom:1px solid rgba(0,200,255,0.15);transition:.2s}
+        #menu-panel button:hover{background:rgba(0,150,255,0.2);color:white;padding-left:28px}
+        #menu-panel button:last-child{border:none}
     `;
     document.head.appendChild(style);
     document.body.appendChild(menu);
 
-    const btn = menu.querySelector('#round-menu-btn');
-    const panel = menu.querySelector('#round-menu-panel');
-    const closeBtn = menu.querySelector('#round-menu-close');
+    const circle = menu.querySelector('#menu-circle');
+    const panel = menu.querySelector('#menu-panel');
 
-    btn.addEventListener('click', () => {
-        panel.classList.toggle('open');
-    });
-
-    closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        panel.classList.remove('open');
-    });
-
-    // === Fake Ping ===
-    setInterval(() => {
-        if (fakeMyPing === null) return;
-        const myName = gameFrame.document.querySelector('[data-hook="nickname"]')?.textContent?.trim();
-        if (!myName) return;
-        const el = Array.from(body.querySelectorAll('.player-list-item')).find(i => i.textContent.includes(myName))?.querySelector('.ping');
-        if (el) {
-            el.textContent = fakeMyPing;
-            el.style.color = fakeMyPing <= 30 ? '#00ff00' : fakeMyPing <= 70 ? '#ffff00' : '#ff0000';
-        }
-    }, 100);
-
-    menu.addEventListener('click', e => {
-        const b = e.target.closest('button');
-        if (!b) return;
-
-        switch (b.dataset.action) {
-            case 'fake-ping':
-                if (fakeMyPing !== null) {
-                    fakeMyPing = null;
-                    b.innerHTML = 'Fake Ping: <b>OFF</b>';
-                } else {
-                    const v = prompt('Твой фейк пинг (например 8, 13, 999):', '13');
-                    if (v && !isNaN(v) && parseInt(v) > 0) {
-                        fakeMyPing = parseInt(v);
-                        b.innerHTML = `Fake Ping: <b>${fakeMyPing} ms</b>`;
-                    }
-                }
-                break;
-            case 'toggle-joystick':
-                VIRTUAL_JOYSTICK = !VIRTUAL_JOYSTICK;
-                showControls(VIRTUAL_JOYSTICK);
-                b.textContent = `Джойстик ${VIRTUAL_JOYSTICK ? 'ON' : 'OFF'}`;
-                break;
-            case 'toggle-chatjoy':
-                const cp = document.getElementById('chat-joystick-panel');
-                const on = cp.style.display !== 'none';
-                cp.style.display = on ? 'none' : 'block';
-                b.textContent = `Чат-джойстик ${on ? 'OFF' : 'ON'}`;
-                break;
-            case 'toggle-fps':
-                localStorage.setItem('show_fps', localStorage.getItem('show_fps') === '0' ? '1' : '0');
-                handleFPSText();
-                b.textContent = `FPS ${localStorage.getItem('show_fps') === '0' ? 'OFF' : 'ON'}`;
-                break;
-            case 'clear-chat': prefabMessage('/clear'); break;
-            case 'store': prefabMessage('/store'); break;
-            case 'afk': prefabMessage('AFK'); emulateKey('KeyX', true); setTimeout(()=>emulateKey('KeyX', false),200); break;
-            case 'reset':
-                if(confirm('Сбросить все настройки мода?')) { localStorage.clear(); location.reload(); }
-                break;
-        }
-    });
-}
-
-// Запуск
-setTimeout(createRoundModMenu, 3000);
+    // Перетаскивание кружка
+    let dragging = false, sx, sy;
+    circle.addEventListener('mousedown', e=>{dragging=true;sx=e.clientX-menu.offsetLeft;sy=e.clientY-menu.offsetTop});
+    circle.addEventListener('touchstart', e=>{dragging=true;sx=e.touches[0].clientX-menu.offsetLeft;sy=e.touches[0].clientY-menu.offsetTop});
+    document.addEventListener('mousemove', e=>{if(dragging){menu.style.left=(e.clientX-sx)+'px';menu.style.top=(e.clientY-sy)+'px';menu.style.right='auto';menu.style.bottom='auto'}});
+    document.addEventListener('touchmove', e=>{if(dragging){menu.style.left=(e.touches[0].clientX-sx)+'px';menu.style.top=(e
